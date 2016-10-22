@@ -14,7 +14,7 @@ package bot;
  * This is a simple bot that does random (but correct) moves.
  * This class implements the Bot interface and overrides its Move methods.
  * You can implement these methods yourself very easily now,
- * since you can retrieve all information about the match from variable “state”.
+ * since you can retrieve all information about the match from variable state.
  * When the bot decided on the move to make, it returns an ArrayList of Moves. 
  * The bot is started by creating a Parser to which you add
  * a new instance of your bot, and then the parser is started.
@@ -34,13 +34,17 @@ public class BotStarter implements Bot
 	/**
 	 * A method that returns which region the bot would like to start on, the pickable regions are stored in the BotState.
 	 * The bots are asked in turn (ABBAABBAAB) where they would like to start and return a single region each time they are asked.
-	 * This method returns one random region from the given pickable regions.
+	 * This method returns the region with the least number of neighbors from the given pickable regions.
 	 */
 	public Region getStartingRegion(BotState state, Long timeOut)
 	{
-		double rand = Math.random();
-		int r = (int) (rand*state.getPickableStartingRegions().size());
-		int regionId = state.getPickableStartingRegions().get(r).getId();
+		int temp = 100, choice = 0, n;
+		for(int i=0; i<state.getPickableStartingRegions().size();i++){
+			n = state.getPickableStartingRegions().get(i).getNeighbors().size();
+			if(n < temp)choice = i;
+			temp = n;
+		}
+		int regionId = state.getPickableStartingRegions().get(choice).getId();
 		Region startingRegion = state.getFullMap().getRegion(regionId);
 		
 		return startingRegion;
