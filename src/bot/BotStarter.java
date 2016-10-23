@@ -91,37 +91,52 @@ public class BotStarter implements Bot
 	{
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
 		String myName = state.getMyPlayerName();
-		int armies = 5;
+		int armies = 0;
 		int maxTransfers = 10;
 		int transfers = 0;
 		
 		for(Region fromRegion : state.getVisibleMap().getRegions())
 		{
-			if(fromRegion.ownedByPlayer(myName)) //do an attack
+			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
 			{
-				ArrayList<Region> possibleToRegions = new ArrayList<Region>();
-				possibleToRegions.addAll(fromRegion.getNeighbors());
+//				// Old attack/transfer code
+//				ArrayList<Region> possibleToRegions = new ArrayList<Region>();
+//				possibleToRegions.addAll(fromRegion.getNeighbors());
+//
+//				while(!possibleToRegions.isEmpty())
+//				{
+//					double rand = Math.random();
+//					int r = (int) (rand*possibleToRegions.size());
+//					Region toRegion = possibleToRegions.get(r);
+//					
+//					if(!toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 6) //do an attack
+//					{
+//						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
+//						break;
+//					}
+//					else if(toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 1
+//								&& transfers < maxTransfers) //do a transfer
+//					{
+//						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
+//						transfers++;
+//						break;
+//					}
+//					else
+//						possibleToRegions.remove(toRegion);
+//				}
 				
-				while(!possibleToRegions.isEmpty())
+				//New transfer code
+				//TODO: Test and debug this code in a match
+				if(!fromRegion.isBorder() && fromRegion.getArmies() > 1 && transfers < maxTransfers)
 				{
-					double rand = Math.random();
-					int r = (int) (rand*possibleToRegions.size());
-					Region toRegion = possibleToRegions.get(r);
-					
-					if(!toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 6) //do an attack
+					Region nextStep = fromRegion.closestAdjacentToBorder();
+					if(nextStep != null)
 					{
-						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
-						break;
-					}
-					else if(toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 1
-								&& transfers < maxTransfers) //do a transfer
-					{
-						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
+						armies = fromRegion.getArmies() - 1;
+						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, nextStep, armies));
 						transfers++;
 						break;
 					}
-					else
-						possibleToRegions.remove(toRegion);
 				}
 			}
 		}

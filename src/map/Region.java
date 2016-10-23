@@ -10,6 +10,8 @@
 
 package map;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 
@@ -121,6 +123,101 @@ public class Region {
 	 */
 	public String getPlayerName() {
 			return playerName;
+	}
+	
+	/**
+	 * @return If this region has the same ID as the passed region.
+	 */
+	@Override
+	public boolean equals(Object o)
+	{
+		return (this.id == ((Region)(o)).id);
+	}
+	
+	/**
+	 * @return True if this region borders territories not owned by the player,
+	 * 		   false otherwise
+	 */
+	public boolean isBorder()
+	{
+		for(Region adjacent : neighbors)
+		{
+			//Return true if any one adjacent region is owned by another player
+			if(!adjacent.playerName.equals(this.playerName))
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * @return The region adjacent to this region which is closest to a
+	 * 		   border region, or null if no such path exists.
+	 */
+	public Region closestAdjacentToBorder()
+	{
+		ArrayList<Region> frontier = new ArrayList<Region>();
+		/* Map id of child region to id of parent region to recover path
+		 * after searching for nearest border region
+		 */
+		HashMap<Integer, Integer> reverseTree = new HashMap<Integer, Integer>();
+		frontier.add(this);
+		reverseTree.put(this.id, this.id);
+		Region curr;
+		/* Current index in frontier so we don't remove elements, as that may cause
+		 * the search to go back to already-explored nodes
+		 */
+		int currNum = 0;
+		
+		/* Main loop to perform a Breadth-First Search for nearest border region
+		 */
+		while(currNum != frontier.size())
+		{
+			curr = frontier.get(currNum);
+			for(Region adj : curr.neighbors)
+			{
+				/* If a border region is found, look for the step which
+				 * led to that region from this region
+				 */
+				if(adj.isBorder())
+				{
+					int currID = curr.id;
+					
+					/* Backtrack through the trail of region IDs until we get
+					 * back to this region
+					 */
+					while(reverseTree.get(currID) != this.id)
+					{
+						currID = reverseTree.get(currID);
+					}
+					
+					/* Once at this region, find the neighbor with the ID given
+					 * by the next step backtracking
+					 */
+					for(Region step : this.neighbors)
+					{
+						if(step.id == currID)
+						{
+							return step;
+						}
+					}
+				}
+				else if(!frontier.contains(adj))
+				{
+					/* If the current region is not a border and not yet
+					 * in the frontier, 
+					 */
+					frontier.add(adj);
+					reverseTree.put(adj.id, curr.id);
+				}
+			}
+			
+			currNum++;
+		}
+		
+		return null;
 	}
 
 }
