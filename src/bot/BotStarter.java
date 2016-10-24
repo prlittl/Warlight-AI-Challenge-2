@@ -75,12 +75,13 @@ public class BotStarter implements Bot
 		int armiesToDeploy = state.getStartingArmies();
 		LinkedList<Region> DeployRegions = state.getVisibleMap().getRegions();
 		
-		for(Region r: DeployRegions){
-			if(!r.ownedByPlayer(myName))
-				DeployRegions.remove(r);
-			
+		for(int i = 0; i < DeployRegions.size(); i++){
+			if(!DeployRegions.get(i).ownedByPlayer(myName)){
+				DeployRegions.remove(i);
+				continue;
+			}
 			int totalEnemies =0, totalNeutral = 0;
-			for(Region adjacent: r.getNeighbors()){
+			for(Region adjacent: DeployRegions.get(i).getNeighbors()){
 				if(adjacent.ownedByPlayer(myName)) continue;
 				if(adjacent.ownedByPlayer(state.getOpponentPlayerName())){
 					totalEnemies += adjacent.getArmies();
@@ -88,11 +89,11 @@ public class BotStarter implements Bot
 				else totalNeutral += adjacent.getArmies();
 			}
 			if(totalEnemies == 0 && totalNeutral == 0)
-				DeployRegions.remove(r);
+				DeployRegions.remove(i);
 			else{
-				int val = -2*(r.getArmies() - totalEnemies) + 3*totalEnemies + totalNeutral;
+				int val = -2*(DeployRegions.get(i).getArmies() - totalEnemies) + 3*totalEnemies + totalNeutral;
 				if(val < 0) val = 0;
-				r.setDeployHeuristic(val);
+				DeployRegions.get(i).setDeployHeuristic(val);
 				TotalSum += val;
 			}
 			
