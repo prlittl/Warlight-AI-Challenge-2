@@ -52,8 +52,18 @@ public class BotStarter implements Bot
 
 	@Override
 	/**
-	 * This method is called for at first part of each round. This example puts two armies on random regions
-	 * until he has no more armies left to place.
+	 * This method is called for at first part of each round. 
+	 * 
+	 * The algorithm is as follows:
+	 * For each of the regions:
+	 * 	if the region is not owned by the player remove it from the list
+	 * 	For each of the regions adjacent to this region\
+	 * 		Find sum of TotalEnemyAdjacentArmies and TotalNeutralAdjacent
+	 *  if 0 sums, remove region from list and continue
+	 *  otherwise	
+	 * 	DeployHeuristic = -2(ThisRegionsArmies - TotalEnemyAdjacentArmies) + 3*TotalEnemyAdjacentArmies + TotalNeutralAdjacent
+	 *  TotalSum +=DeployHeuristic
+	 * Deploy armies based on the Ratio of each regions DeployHeuristic and the totalSum and the number of armies to deploy
 	 * @return The list of PlaceArmiesMoves for one round
 	 */
 	public ArrayList<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) 
@@ -61,23 +71,53 @@ public class BotStarter implements Bot
 		
 		ArrayList<PlaceArmiesMove> placeArmiesMoves = new ArrayList<PlaceArmiesMove>();
 		String myName = state.getMyPlayerName();
-		int armies = 2;
-		int armiesLeft = state.getStartingArmies();
-		LinkedList<Region> visibleRegions = state.getVisibleMap().getRegions();
+		int TotalSum = 0;
+		int armiesToDeploy = state.getStartingArmies();
+		LinkedList<Region> DeployRegions = state.getVisibleMap().getRegions();
 		
-		while(armiesLeft > 0)
-		{
-			double rand = Math.random();
-			int r = (int) (rand*visibleRegions.size());
-			Region region = visibleRegions.get(r);
+		for(Region r: DeployRegions){
+			if(!r.ownedByPlayer(myName))
+				DeployRegions.remove(r);
 			
-			if(region.ownedByPlayer(myName))
-			{
-				placeArmiesMoves.add(new PlaceArmiesMove(myName, region, armies));
-				armiesLeft -= armies;
+			int totalEnemies =0, totalNeutral = 0;
+			for(Region adjacent: r.getNeighbors()){
+				if(adjacent.ownedByPlayer(myName)) continue;
+				if(adjacent.ownedByPlayer(state.getOpponentPlayerName())){
+					totalEnemies += adjacent.getArmies();
+				}
+				else totalNeutral += adjacent.getArmies();
 			}
+			if(totalEnemies == 0 && totalNeutral == 0)
+				DeployRegions.remove(r);
+			else{
+				int val = -2*(r.getArmies() - totalEnemies) + 3*totalEnemies + totalNeutral;
+				if(val < 0) val = 0;
+				r.setDeployHeuristic(val);
+				TotalSum += val;
+			}
+			
 		}
 		
+		int planned = 0; //because of truncation, used later
+		for(Region r: DeployRegions){
+			int armies = (int) (r.getDeployHeuristic()/(double)TotalSum)*armiesToDeploy;
+			placeArmiesMoves.add(new PlaceArmiesMove(myName, r, armies));
+			planned += armies;
+		}
+		if(planned != armiesToDeploy){
+			//add remainder to the max heuristic region
+			int maxHeuristic = Integer.MIN_VALUE;
+			int index = 0;
+			for(int i = 0; i < DeployRegions.size(); i++){
+				if(DeployRegions.get(i).getDeployHeuristic() > maxHeuristic){
+					maxHeuristic = DeployRegions.get(i).getDeployHeuristic();
+					index = i;
+				}
+			}
+			//index of DeployRegions and placeArmiesMoves relate by the region
+			placeArmiesMoves.get(index).setArmies(armiesToDeploy-planned);
+			
+		}
 		return placeArmiesMoves;
 	}
 

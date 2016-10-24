@@ -23,6 +23,11 @@ public class Region {
 	private int armies;
 	private String playerName;
 	
+	
+	private int deployHeuristic = 0;
+	
+	
+
 	public Region(int id, SuperRegion superRegion)
 	{
 		this.id = id;
@@ -123,6 +128,20 @@ public class Region {
 	 */
 	public String getPlayerName() {
 			return playerName;
+	}
+	
+	/**
+	 * @return the set value of the deployHeuristic.
+	 */
+	public int getDeployHeuristic() {
+		return deployHeuristic;
+	}
+
+	/**
+	 * @param deployHeuristic Sets the heuristic value for this region, 
+	 */
+	public void setDeployHeuristic(int deployHeuristic) {
+		this.deployHeuristic = deployHeuristic;
 	}
 	
 	/**
