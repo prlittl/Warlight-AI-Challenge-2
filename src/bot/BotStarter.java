@@ -11,7 +11,7 @@
 package bot;
 
 /**
- * This is a simple bot that does random (but correct) moves.
+ * 
  * This class implements the Bot interface and overrides its Move methods.
  * You can implement these methods yourself very easily now,
  * since you can retrieve all information about the match from variable state.
@@ -71,54 +71,68 @@ public class BotStarter implements Bot
 		
 		ArrayList<PlaceArmiesMove> placeArmiesMoves = new ArrayList<PlaceArmiesMove>();
 		String myName = state.getMyPlayerName();
-		int TotalSum = 0;
+		int totalSum = 0;
 		int armiesToDeploy = state.getStartingArmies();
-		LinkedList<Region> DeployRegions = state.getVisibleMap().getRegions();
+		LinkedList<Region> deployRegions = state.getVisibleMap().getRegions();
 		
-		for(int i = 0; i < DeployRegions.size(); i++){
-			if(!DeployRegions.get(i).ownedByPlayer(myName)){
-				DeployRegions.remove(i);
+		for(int i = 0; i < deployRegions.size(); i++){
+			if(!deployRegions.get(i).ownedByPlayer(myName)){
+				deployRegions.remove(i);
+				i--;
 				continue;
 			}
-			int totalEnemies =0, totalNeutral = 0;
-			for(Region adjacent: DeployRegions.get(i).getNeighbors()){
+			int totalEnemies = 0, totalNeutral = 0;
+			for(Region adjacent: deployRegions.get(i).getNeighbors()){
 				if(adjacent.ownedByPlayer(myName)) continue;
 				if(adjacent.ownedByPlayer(state.getOpponentPlayerName())){
 					totalEnemies += adjacent.getArmies();
 				}
 				else totalNeutral += adjacent.getArmies();
 			}
-			if(totalEnemies == 0 && totalNeutral == 0)
-				DeployRegions.remove(i);
-			else{
-				int val = -2*(DeployRegions.get(i).getArmies() - totalEnemies) + 3*totalEnemies + totalNeutral;
-				if(val < 0) val = 0;
-				DeployRegions.get(i).setDeployHeuristic(val);
-				TotalSum += val;
+			if(totalEnemies == 0 && totalNeutral == 0){
+				deployRegions.remove(i);
+				i--;
+			}else{
+				int val = 0;
+				if(totalEnemies > deployRegions.get(i).getArmies())
+					val =2*totalEnemies + totalNeutral + (totalEnemies-deployRegions.get(i).getArmies());
+				deployRegions.get(i).setDeployHeuristic(val);
+				totalSum += val;
 			}
 			
 		}
 		
 		int planned = 0; //because of truncation, used later
-		for(Region r: DeployRegions){
-			int armies = (int) (r.getDeployHeuristic()/(double)TotalSum)*armiesToDeploy;
-			placeArmiesMoves.add(new PlaceArmiesMove(myName, r, armies));
+		for(int i = 0; i < deployRegions.size(); i++){
+			int armies = (int) (deployRegions.get(i).getDeployHeuristic()/(double)totalSum)*armiesToDeploy;
+			if(armies < 1 && deployRegions.size() > 1){
+				deployRegions.remove(i);
+				i--;
+				continue;
+			}
+			placeArmiesMoves.add(new PlaceArmiesMove(myName, deployRegions.get(i), armies));
 			planned += armies;
+			
 		}
+	
 		if(planned != armiesToDeploy){
 			//add remainder to the max heuristic region
 			int maxHeuristic = Integer.MIN_VALUE;
 			int index = 0;
-			for(int i = 0; i < DeployRegions.size(); i++){
-				if(DeployRegions.get(i).getDeployHeuristic() > maxHeuristic){
-					maxHeuristic = DeployRegions.get(i).getDeployHeuristic();
+			for(int i = 0; i < deployRegions.size(); i++){
+				if(deployRegions.get(i).getDeployHeuristic() > maxHeuristic){
+					maxHeuristic = deployRegions.get(i).getDeployHeuristic();
 					index = i;
 				}
 			}
 			//index of DeployRegions and placeArmiesMoves relate by the region
-			placeArmiesMoves.get(index).setArmies(armiesToDeploy-planned);
+			placeArmiesMoves.get(index).setArmies(armiesToDeploy-planned+placeArmiesMoves.get(index).getArmies());
 			
 		}
+		for(int i =0; i < placeArmiesMoves.size(); i++){
+			System.err.println("Deploy to " + placeArmiesMoves.get(i).getRegion().getId() + " Armies: " + placeArmiesMoves.get(i).getArmies());
+		}
+		
 		return placeArmiesMoves;
 	}
 
@@ -177,6 +191,17 @@ public class BotStarter implements Bot
 						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, nextStep, armies));
 						transfers++;
 						break;
+					}
+				}
+				//Random Attack code
+				else if(fromRegion.isBorder() && fromRegion.getArmies() > 1 && transfers < maxTransfers){
+					if(Math.random() > .5){
+						//select a random non-self region
+						Region selection = null;
+						do{
+							selection = fromRegion.getNeighbors().get((int) (Math.random()*fromRegion.getNeighbors().size()));
+						}while(selection.ownedByPlayer(fromRegion.getPlayerName()));
+						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, selection, fromRegion.getArmies() -1));
 					}
 				}
 			}
