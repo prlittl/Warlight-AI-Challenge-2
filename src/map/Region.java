@@ -177,6 +177,13 @@ public class Region {
 	 */
 	public Region closestAdjacentToBorder()
 	{
+		/* If called on a border region, return the region itself 
+		 */
+		if(this.isBorder())
+		{
+			return this;
+		}
+		
 		ArrayList<Region> frontier = new ArrayList<Region>();
 		/* Map id of child region to id of parent region to recover path
 		 * after searching for nearest border region
@@ -202,6 +209,14 @@ public class Region {
 				 */
 				if(adj.isBorder())
 				{
+					/* If we are on the current node, return the adjacent node
+					 * without backtracking as it will be the first step
+					 */
+					if(curr.equals(this))
+					{
+						return adj;
+					}
+					
 					int currID = curr.id;
 					
 					/* Backtrack through the trail of region IDs until we get
