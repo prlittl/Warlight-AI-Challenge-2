@@ -165,10 +165,19 @@ public class BotStarter implements Bot
 		}
 		
 		//avoid infinite loop:
-		//if we didnt NEED armies anywhere, add them to the first on the list  ***might change this case later
+		//if we didnt NEED armies anywhere, disperse them amongst the edges
 		if(allocated == 0){
-			deployRegions.get(0).setWantedArmies(armiesToDeploy);
-			allocated = armiesToDeploy;
+			//for each of the border regions, just keep adding one to plan there until we are out
+			int k = 0;
+			while(allocated < armiesToDeploy){
+				if(k < deployRegions.size()){
+					deployRegions.get(k).setWantedArmies(deployRegions.get(k).getWantedArmies() + 1);
+					allocated++;
+					k++;
+				}else{
+					k = 0;
+				}
+			}
 		}else{
 		
 			//until we have planned all remaining armies, go to every place we planned to deploy to and add an army
