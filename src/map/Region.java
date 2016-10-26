@@ -24,7 +24,7 @@ public class Region {
 	private String playerName;
 	
 	
-	private int deployHeuristic = 0;
+	private int armiesWanted = 0;
 	
 	
 
@@ -131,17 +131,17 @@ public class Region {
 	}
 	
 	/**
-	 * @return the set value of the deployHeuristic.
+	 * @return the set value of the armiesWanted.
 	 */
-	public int getDeployHeuristic() {
-		return deployHeuristic;
+	public int getWantedArmies() {
+		return armiesWanted;
 	}
 
 	/**
-	 * @param deployHeuristic Sets the heuristic value for this region, 
+	 * @param armiesWanted Sets the heuristic value for this region, 
 	 */
-	public void setDeployHeuristic(int deployHeuristic) {
-		this.deployHeuristic = deployHeuristic;
+	public void setWantedArmies(int armiesWanted) {
+		this.armiesWanted = armiesWanted;
 	}
 	
 	/**
@@ -238,5 +238,18 @@ public class Region {
 		
 		return null;
 	}
-
+	
+	/**
+	 * 
+	 * @param opponentName The name of the opponent from BotState
+	 * @return true iff an adjacent Region is owned by opponentName
+	 */
+	public boolean hasEnemy(String opponentName){
+		for(Region r: neighbors){
+			if(r.ownedByPlayer(opponentName))
+				return true;
+		}
+		return false;
+	}
+	
 }
