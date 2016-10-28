@@ -131,4 +131,12 @@ public class Map {
 		return mapString;
 	}	
 	
+	//note that map, if not the "visible" map has "unknown" for player names of locations that are not visible (I think)
+	public double Utility(String myName, String opponent){
+		
+		
+		return 0;
+	}
+	
+	
 }

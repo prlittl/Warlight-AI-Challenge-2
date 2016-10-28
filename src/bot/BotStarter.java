@@ -10,6 +10,10 @@
 
 package bot;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+
 /**
  * 
  * This class implements the Bot interface and overrides its Move methods.
@@ -21,10 +25,11 @@ package bot;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 
+import map.Map;
 import map.Region;
-import map.SuperRegion;
 import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
@@ -61,7 +66,7 @@ public class BotStarter implements Bot
 	 * 	-if the total amount of armies needed for defense is larger than the total we have
 	 * 		-give all regions based on ratio to defense
 	 *   otherwise give what is needed to defense, then give what is needed for each non-endangered territory for expansion	
-	 * 	
+	 * 	TODO add deployed armies to Regions armies? I don't think it updates automatically for this
 	 * @return The list of PlaceArmiesMoves for one round
 	 */
 	public ArrayList<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) 
@@ -268,14 +273,57 @@ public class BotStarter implements Bot
 				}
 				//Random Attack code
 				else if(fromRegion.isBorder() && fromRegion.getArmies() > 1){
-					if(Math.random() > .5){
-						//select a random non-self region
-						Region selection = null;
-						do{
-							selection = fromRegion.getNeighbors().get((int) (Math.random()*fromRegion.getNeighbors().size()));
-						}while(selection.ownedByPlayer(fromRegion.getPlayerName()));
-						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, selection, fromRegion.getArmies() -1));
+					
+					//get list of regions I can attack
+					ArrayList<Region> attackable = new ArrayList<Region>();
+					for(int i = 0; i < fromRegion.getNeighbors().size(); i++){
+						Region current = fromRegion.getNeighbors().get(i);
+						if(!current.getPlayerName().equals(myName)){
+							attackable.add(current);
+						}
 					}
+					
+					//I need two doubles for each Attackable Region: probability and Utility
+					//index of each corresponds to index of an attackable
+					double[] probabilities = new double[attackable.size()];
+					double[] utilities = new double[attackable.size()];
+					
+					//find each of the probabilities and utilities for taking an attackable region
+					for(int i =0;i< attackable.size(); i++){
+						Region current = attackable.get(i);
+						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
+						//compute the Utility of the map if I do take it
+						//does not take into account armies if that matters in future
+						Map visible = state.getVisibleMap();
+						//make the region in question mine **this should work...I think
+						for(int k = 0; k < visible.regions.size(); k++){
+							if(visible.regions.get(k).getId() == current.getId()){
+								visible.regions.get(k).setPlayerName(myName); //ought to change this region everywhere it is referenced
+								//unless when SuperRegions and Neighborlists are made they are given NEW Regions that are identical
+							}
+						}
+						utilities[i] = visible.Utility(myName, state.getOpponentPlayerName());
+					}
+					boolean[] willingToTry = new boolean[attackable.size()];
+					//give answer for each index
+					for(int i = 0; i<probabilities.length; i++){
+						if(probabilities[i] > .5) willingToTry[i] = true;
+						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
+					}
+					//find the max utility of the ones we are willing to try.
+					int indexMax = -1;
+					double maxUtil = -Double.MAX_VALUE;
+					for(int i = 0; i < utilities.length; i++){
+						if(willingToTry[i] && utilities[i] > maxUtil){
+							indexMax = i;
+							maxUtil = utilities[i];
+						}
+					}
+					//If we were willing to do any, do that best one with all we got.
+					if(indexMax != -1){
+						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
+					}
+					
 				}
 			}
 		}
@@ -283,6 +331,64 @@ public class BotStarter implements Bot
 		return attackTransferMoves;
 	}
 
+	
+	private static double probabilityToTake(double attackers, double defenders){
+		double probability = 0;
+		
+		//if they have less than .84*(.6*attackers), then we take them for sure => .504 * attackers = #certain defender death
+		if(defenders< attackers*.504){
+			probability = 1;
+		}
+		//if they have more than .84*(.6*attackers)+.16*attackers, then there is no way we can take them
+		else if(defenders > (attackers*.504 + .16*attackers)+1){
+			probability = 0; // already is but ok
+		}
+		//now we gotta find the legit probability...because there is a chance but its not certain...
+		else{
+			int need = (int) ((defenders - .504*attackers)/.16 ) ;
+			if(need <= attackers)
+			probability = 1 - binomialcdf(need, (int) attackers, .6);
+			
+		}
+		return probability;
+	}
+	
+	public static double binomialcdf(int numCorrect, int numTrials, double probValue){
+		if(numCorrect == numTrials) return binomialDist(3,3,.6);
+		double total = 0;
+		for(int i = 0; i <= numCorrect; i++){
+			total+=binomialDist(i, numTrials, probValue);
+		}
+		return total;
+	}
+	
+	public static double binomialDist(int numCorrect, int numTrials, double probValue)
+	{
+		BigInteger ntF = factorial(numTrials);
+		BigInteger denom = factorial(numCorrect).multiply(factorial(numTrials - numCorrect));
+
+		BigDecimal ntFBD = new BigDecimal(ntF);
+		BigDecimal denomBD = new BigDecimal(denom);
+		BigDecimal quotient = ntFBD.divide(denomBD, 40, RoundingMode.HALF_UP);
+
+		BigDecimal restBD = BigDecimal.valueOf(Math.pow(probValue, numCorrect) * Math.pow((1d - probValue), numTrials - numCorrect));
+		return(quotient.multiply(restBD).doubleValue());
+	}
+	
+	/**
+	 * Compute factorial of n
+	 */
+	public static BigInteger factorial(int n)
+	{
+		BigInteger res = BigInteger.ONE;
+
+		for (int i = n; i>1; i--)
+		{
+			res = res.multiply(BigInteger.valueOf(i));
+		}
+		return(res);
+	}
+	
 	public static void main(String[] args)
 	{
 		BotParser parser = new BotParser(new BotStarter());
