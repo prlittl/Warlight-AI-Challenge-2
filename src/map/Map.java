@@ -131,11 +131,40 @@ public class Map {
 		return mapString;
 	}	
 	
-	//note that map, if not the "visible" map has "unknown" for player names of locations that are not visible (I think)
+	
+	/**
+	 * @param myName
+	 * @param opponent
+	 * @return the utility value of the map
+	 */
 	public double Utility(String myName, String opponent){
+		int util = 0; //calculated utility value
+		int owned = 0; //number of regions owned in a super region
+		int enemyOwned = 0; //number of regions the enemy owns in a super region
 		
+		//for every region add one point of utility if we own it, and take one away if the enemy does
+		for(int i=0;i<regions.size();i++){
+			if(regions.get(i).getPlayerName().equals(myName))util++;
+			else if(regions.get(i).getPlayerName().equals(opponent))util--;
+		}
 		
-		return 0;
+		//for every super region add to utility (total/owned regions) * the super region army bonus
+		for(int i=0;i<superRegions.size();i++){
+			//for every sub region of the super region see if it is owned by us or the opponent
+			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
+				if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(myName))owned++;
+				else if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(opponent))enemyOwned++;
+			}
+			util += ((superRegions.get(i).getSubRegions().size()/owned) * superRegions.get(i).getArmiesReward());
+			
+			//if the enemy owns at least one region in a super region, take away one point for every one we own in that super region
+			if(owned != superRegions.get(i).getSubRegions().size() && enemyOwned > 0)util -= owned;
+			
+			//if we own all regions in a super region, add an arbitrarily large bonus 
+			if(owned == superRegions.get(i).getSubRegions().size())util += 10;
+		}
+		
+		return util;
 	}
 	
 	
