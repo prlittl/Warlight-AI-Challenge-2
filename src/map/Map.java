@@ -155,6 +155,8 @@ public class Map {
 				if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(myName))owned++;
 				else if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(opponent))enemyOwned++;
 			}
+			//ADDING ZERO CHECK HERE **UPDATE AS NECESSARY
+			if(owned != 0)
 			util += ((superRegions.get(i).getSubRegions().size()/owned) * superRegions.get(i).getArmiesReward());
 			
 			//if the enemy owns at least one region in a super region, take away one point for every one we own in that super region
