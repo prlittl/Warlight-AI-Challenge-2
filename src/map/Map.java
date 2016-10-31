@@ -138,7 +138,7 @@ public class Map {
 	 * @return the utility value of the map
 	 */
 	public double Utility(String myName, String opponent){
-		int util = 0; //calculated utility value
+		double util = 0; //calculated utility value
 		int owned = 0; //number of regions owned in a super region
 		int enemyOwned = 0; //number of regions the enemy owns in a super region
 		
@@ -155,15 +155,14 @@ public class Map {
 				if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(myName))owned++;
 				else if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(opponent))enemyOwned++;
 			}
-			//ADDING ZERO CHECK HERE **UPDATE AS NECESSARY
-			if(owned != 0)
-			util += ((superRegions.get(i).getSubRegions().size()/owned) * superRegions.get(i).getArmiesReward());
+			
+			util += ((double)owned/(superRegions.get(i).getSubRegions().size()) * superRegions.get(i).getArmiesReward());
 			
 			//if the enemy owns at least one region in a super region, take away one point for every one we own in that super region
 			if(owned != superRegions.get(i).getSubRegions().size() && enemyOwned > 0)util -= owned;
 			
-			//if we own all regions in a super region, add an arbitrarily large bonus 
-			if(owned == superRegions.get(i).getSubRegions().size())util += 10;
+			//if we own all regions in a super region, add an arbitrarily large bonus ******Jacob changed to be super region bonus amount
+			if(owned == superRegions.get(i).getSubRegions().size())util += superRegions.get(i).getArmiesReward();
 		}
 		
 		return util;

@@ -66,7 +66,7 @@ public class BotStarter implements Bot
 	 * 	-if the total amount of armies needed for defense is larger than the total we have
 	 * 		-give all regions based on ratio to defense
 	 *   otherwise give what is needed to defense, then give what is needed for each non-endangered territory for expansion	
-	 * 	TODO add deployed armies to Regions armies? I don't think it updates automatically for this
+	 * 	TODO verify adding wanted armies to the region's armies carries through to attack phase now
 	 * @return The list of PlaceArmiesMoves for one round
 	 */
 	public ArrayList<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) 
@@ -86,9 +86,9 @@ public class BotStarter implements Bot
 			if(current.ownedByPlayer(myName) && current.isBorder())
 				deployRegions.add(current);
 		}
-		System.err.println(deployRegions.size() + " Deployable Regions. " + armiesToDeploy + " armies to deploy: \n");
+		//System.err.println(deployRegions.size() + " Deployable Regions. " + armiesToDeploy + " armies to deploy: \n");
 		if(deployRegions.size() == 0){
-			System.err.println("ERROR no deployable regions\n");
+			//System.err.println("ERROR no deployable regions\n");
 			return placeArmiesMoves;
 		}
 		//Figure out how many armies we "need" at each border location.
@@ -205,11 +205,17 @@ public class BotStarter implements Bot
 			Region current = deployRegions.get(i);
 			if(current.getWantedArmies() > 0){
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, current, current.getWantedArmies()));
+				//UPDATE REGIONS' ARMIES FOR ATTACK PLANNING******
+				current.setArmies(current.getArmies() + current.getWantedArmies());
 				//DEBUG
-				System.err.println("Tried placing " + current.getWantedArmies() +" on region " + current.getId());
+			//	System.err.println("Tried placing " + current.getWantedArmies() +" on region " + current.getId());
 			}
 		}
-		System.err.println("-------------END TURN--------------");
+		
+		
+		
+		
+		
 		//go get 'em boy!
 		return placeArmiesMoves;
 	}
@@ -246,7 +252,7 @@ public class BotStarter implements Bot
 					}
 				}
 				//Attack
-				else if(fromRegion.isBorder() && fromRegion.getArmies() > 1){
+				else if(fromRegion.isBorder() && fromRegion.getArmies() > 1){ 
 					
 					//get list of regions I can attack
 					ArrayList<Region> attackable = new ArrayList<Region>();
@@ -272,11 +278,14 @@ public class BotStarter implements Bot
 						//make the region in question mine **this should work...I think
 						for(int k = 0; k < visible.regions.size(); k++){
 							if(visible.regions.get(k).getId() == current.getId()){
-								visible.regions.get(k).setPlayerName(myName); //ought to change this region everywhere it is referenced
-								//unless when SuperRegions and Neighborlists are made they are given NEW Regions that are identical
+								String regionOwner = visible.regions.get(k).getPlayerName();
+								visible.regions.get(k).setPlayerName(myName);
+								utilities[i] = visible.Utility(myName, state.getOpponentPlayerName());
+								visible.regions.get(k).setPlayerName(regionOwner); //restore order. Don't want to consider it as ours next time!
+								break; //we got it.
 							}
 						}
-						utilities[i] = visible.Utility(myName, state.getOpponentPlayerName());
+						
 					}
 					boolean[] willingToTry = new boolean[attackable.size()];
 					//give answer for each index
@@ -293,10 +302,10 @@ public class BotStarter implements Bot
 							maxUtil = utilities[i];
 						}
 					}
-					System.err.println("\n ATTACK: \n");
-					for(Region r: attackable){
-						System.err.println(r.getId() + " is attackable" );
-					}
+					//System.err.println("\n ATTACK: \n");
+					//for(Region r: attackable){
+					//	System.err.println(r.getId() + " is attackable" );
+					//}
 					//If we were willing to do any, do that best one with all we got.
 					if(indexMax != -1){
 						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
@@ -306,12 +315,12 @@ public class BotStarter implements Bot
 			}
 		}
 		
-		System.err.println("\n Here is what we want to attack: ");
-		for(int i = 0; i < attackTransferMoves.size(); i++){
-			System.err.println(attackTransferMoves.get(i).getFromRegion() + " to " + attackTransferMoves.get(i).getToRegion() + " with " + attackTransferMoves.get(i).getArmies());
-		}
+		//System.err.println("\n Here is what we want to attack: ");
+		//for(int i = 0; i < attackTransferMoves.size(); i++){
+		//	System.err.println(attackTransferMoves.get(i).getFromRegion().getId() + " to " + attackTransferMoves.get(i).getToRegion().getId() + " with " + attackTransferMoves.get(i).getArmies());
+		//}
 		
-		
+		//System.err.println("-------------END TURN--------------");
 		return attackTransferMoves;
 	}
 
