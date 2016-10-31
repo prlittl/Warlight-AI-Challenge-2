@@ -232,34 +232,8 @@ public class BotStarter implements Bot
 		{
 			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
 			{
-//				// Old attack/transfer code
-//				ArrayList<Region> possibleToRegions = new ArrayList<Region>();
-//				possibleToRegions.addAll(fromRegion.getNeighbors());
-//
-//				while(!possibleToRegions.isEmpty())
-//				{
-//					double rand = Math.random();
-//					int r = (int) (rand*possibleToRegions.size());
-//					Region toRegion = possibleToRegions.get(r);
-//					
-//					if(!toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 6) //do an attack
-//					{
-//						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
-//						break;
-//					}
-//					else if(toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 1
-//								&& transfers < maxTransfers) //do a transfer
-//					{
-//						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
-//						transfers++;
-//						break;
-//					}
-//					else
-//						possibleToRegions.remove(toRegion);
-//				}
-				
 				//New transfer code
-				//TODO: Test and debug this code in a match
+				//Tested
 				if(!fromRegion.isBorder() && fromRegion.getArmies() > 1 && transfers < maxTransfers)
 				{
 					Region nextStep = fromRegion.closestAdjacentToBorder();
@@ -271,7 +245,7 @@ public class BotStarter implements Bot
 						break;
 					}
 				}
-				//Random Attack code
+				//Attack
 				else if(fromRegion.isBorder() && fromRegion.getArmies() > 1){
 					
 					//get list of regions I can attack
@@ -319,6 +293,10 @@ public class BotStarter implements Bot
 							maxUtil = utilities[i];
 						}
 					}
+					System.err.println("\n ATTACK: \n");
+					for(Region r: attackable){
+						System.err.println(r.getId() + " is attackable" );
+					}
 					//If we were willing to do any, do that best one with all we got.
 					if(indexMax != -1){
 						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
@@ -327,6 +305,12 @@ public class BotStarter implements Bot
 				}
 			}
 		}
+		
+		System.err.println("\n Here is what we want to attack: ");
+		for(int i = 0; i < attackTransferMoves.size(); i++){
+			System.err.println(attackTransferMoves.get(i).getFromRegion() + " to " + attackTransferMoves.get(i).getToRegion() + " with " + attackTransferMoves.get(i).getArmies());
+		}
+		
 		
 		return attackTransferMoves;
 	}
