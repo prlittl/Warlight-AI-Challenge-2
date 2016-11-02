@@ -11,6 +11,7 @@
 package map;
 
 import java.util.LinkedList;
+import java.util.Random;
 
 public class Map {
 	
@@ -168,5 +169,42 @@ public class Map {
 		return util;
 	}
 	
-	
+	/**
+	 * Randomly moves an army from one of the regions that has been deployed to
+	 * to another border region
+	 * @param ids The list of region ids corresponding to the regions deployed to
+	 * @param deployed The number of armies deployed so far to each region
+	 */
+	public void getRandomSuccessor(int[] ids, int[] deployed)
+	{
+		//Make sure at least one deployment was made so far
+		boolean deployMade = false;
+		for(int i = 0; i < deployed.length; i++)
+		{
+			if(deployed[i] > 0) deployMade = true;
+		}
+		if(!deployMade || ids.length <= 1) return;
+		
+		//Create a random number stream
+		Random rand = new Random(System.currentTimeMillis());
+		
+		//Get a region to move from, making sure that it has at least one deployed already
+		int from, to;
+		do
+		{
+			from = (int)(rand.nextDouble() * (deployed.length - 1));
+		} while(deployed[from] == 0);
+		
+		//Get a region to move to, making sure that it is not the same as the from region
+		do
+		{
+			to = (int)(rand.nextDouble() * (deployed.length - 1));
+		} while(to == from);
+		
+		deployed[from]--;
+		deployed[to]++;
+		
+		this.getRegion(ids[from]).setArmies(this.getRegion(ids[from]).getArmies() - 1);
+		this.getRegion(ids[to]).setArmies(this.getRegion(ids[to]).getArmies() + 1);
+	}
 }
