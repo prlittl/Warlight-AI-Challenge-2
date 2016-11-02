@@ -329,13 +329,13 @@ public class BotStarter implements Bot
 	/**
 	 * 
 	 * @param state botstate
-	 * @param visible a COPY of the visible regions
+	 * @param visible bots
 	 * @param myName playerName
 	 * @return
 	 */
-	private double expectedUtilityAfter(BotState state, Map visible, String myName){
+	private double expectedUtilityAfter(BotState state, Map vis, String myName){
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
-		
+		Map visible = vis.getMapCopy();
 		for(Region fromRegion : visible.getRegions())
 		{
 			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
