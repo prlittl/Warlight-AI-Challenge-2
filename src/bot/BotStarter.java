@@ -323,7 +323,90 @@ public class BotStarter implements Bot
 		//System.err.println("-------------END TURN--------------");
 		return attackTransferMoves;
 	}
-
+	
+	//note that "expected" may not be the best term, as it doesn't actually take into account probability 
+	//except to include a region after attack
+	/**
+	 * 
+	 * @param state botstate
+	 * @param visible a COPY of the visible regions
+	 * @param myName playerName
+	 * @return
+	 */
+	private double expectedUtilityAfter(BotState state, Map visible, String myName){
+		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
+		
+		for(Region fromRegion : visible.getRegions())
+		{
+			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
+			{
+				//Attack
+				if(fromRegion.isBorder() && fromRegion.getArmies() > 1){ 
+					
+					//get list of regions I can attack
+					ArrayList<Region> attackable = new ArrayList<Region>();
+					for(int i = 0; i < fromRegion.getNeighbors().size(); i++){
+						Region current = fromRegion.getNeighbors().get(i);
+						if(!current.getPlayerName().equals(myName)){
+							attackable.add(current);
+						}
+					}
+					
+					//I need two doubles for each Attackable Region: probability and Utility
+					//index of each corresponds to index of an attackable
+					double[] probabilities = new double[attackable.size()];
+					double[] utilities = new double[attackable.size()];
+					
+					//find each of the probabilities and utilities for taking an attackable region
+					for(int i =0;i< attackable.size(); i++){
+						Region current = attackable.get(i);
+						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
+						//compute the Utility of the map if I do take it
+						//does not take into account armies if that matters in future
+						Map visible1 = state.getVisibleMap();
+						//make the region in question mine **this should work...I think
+						for(int k = 0; k < visible1.regions.size(); k++){
+							if(visible1.regions.get(k).getId() == current.getId()){
+								String regionOwner = visible1.regions.get(k).getPlayerName();
+								visible1.regions.get(k).setPlayerName(myName);
+								utilities[i] = visible1.Utility(myName, state.getOpponentPlayerName());
+								visible1.regions.get(k).setPlayerName(regionOwner); //restore order. Don't want to consider it as ours next time!
+								break; //we got it.
+							}
+						}
+						
+					}
+					boolean[] willingToTry = new boolean[attackable.size()];
+					//give answer for each index
+					for(int i = 0; i<probabilities.length; i++){
+						if(probabilities[i] > .5) willingToTry[i] = true;
+						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
+					}
+					//find the max utility of the ones we are willing to try.
+					int indexMax = -1;
+					double maxUtil = -Double.MAX_VALUE;
+					for(int i = 0; i < utilities.length; i++){
+						if(willingToTry[i] && utilities[i] > maxUtil){
+							indexMax = i;
+							maxUtil = utilities[i];
+						}
+					}
+					//If we were willing to do any, do that best one with all we got.
+					if(indexMax != -1){
+						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
+					}
+					
+				}
+			}
+		}
+		//go through and make attacking regions our own
+		for(AttackTransferMove move: attackTransferMoves){
+			visible.getRegion(move.getToRegion().getId()).setPlayerName(myName);
+		}
+		
+		//we could perhaps improve this by accounting for the probabilities in the expected value itself
+		return visible.Utility(myName, state.getOpponentPlayerName());
+	}
 	
 	private static double probabilityToTake(double attackers, double defenders){
 		double probability = 0;
