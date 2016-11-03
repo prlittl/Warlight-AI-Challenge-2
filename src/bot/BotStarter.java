@@ -105,8 +105,10 @@ public class BotStarter implements Bot
 			}
 			k = (k+1) % ids.length;
 		}
-			//TODO add deployed armies to the actual map regions before returning
+			
 		
+		
+		//TODO add deployed armies to the actual map regions before returning
 		
 		//go get 'em boy!
 		return placeArmiesMoves;
