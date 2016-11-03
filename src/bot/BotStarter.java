@@ -71,150 +71,44 @@ public class BotStarter implements Bot
 	 */
 	public ArrayList<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) 
 	{
-		
+		long startTime = System.nanoTime();
+		long currentTime = startTime;
 		ArrayList<PlaceArmiesMove> placeArmiesMoves = new ArrayList<PlaceArmiesMove>();
 		String myName = state.getMyPlayerName();
 		String opponentName = state.getOpponentPlayerName();
-		int totalWantedEnemy = 0;
 		int armiesToDeploy = state.getStartingArmies();
 		LinkedList<Region> visibleRegions = state.getVisibleMap().getRegions();
-		ArrayList<Region> deployRegions = new ArrayList<Region>();
+		ArrayList<Region> deployableRegions = new ArrayList<Region>();
 		
-		//add to deployRegions deployable regions from visibleRegions. Namely, those that are yours and that are on the border
+		//first, get our border regions and put them in deployable regions
 		for(int i = 0; i < visibleRegions.size(); i++){
-			Region current = visibleRegions.get(i);
-			if(current.ownedByPlayer(myName) && current.isBorder())
-				deployRegions.add(current);
-		}
-		//System.err.println(deployRegions.size() + " Deployable Regions. " + armiesToDeploy + " armies to deploy: \n");
-		if(deployRegions.size() == 0){
-			//System.err.println("ERROR no deployable regions\n");
-			return placeArmiesMoves;
-		}
-		//Figure out how many armies we "need" at each border location.
-		//If there are enemies present, we want to have at least 1.5x enemy count
-		//otherwise we want 2x the largest neutral army count (wastelands)
-		for(int i = 0; i < deployRegions.size(); i++){
-			Region current = deployRegions.get(i);
-			if(current.hasEnemy(opponentName)){
-				//We want to have 1.5x enemy count. If we have more than that already, we don't want any
-				//find total enemies
-				int totalEnemy = 0;
-				for(Region r: current.getNeighbors()){
-					if(r.ownedByPlayer(opponentName)) //make sure it is owned by enemy
-						totalEnemy = totalEnemy + r.getArmies();
-				}
-				totalEnemy = (int) (totalEnemy * 1.5); //lets pretend they have more
-				//If we do not have enough, we want the difference between what we need and what we have
-				if(current.getArmies() < totalEnemy){
-					current.setWantedArmies(totalEnemy - current.getArmies());
-					totalWantedEnemy += current.getWantedArmies();
-				}
-				//set to 0 because otherwise the last iteration may persist!
-				else{
-					current.setWantedArmies(0);
-				}
-			}else{
-				//There are no enemies, but it was a border. Therefore there are only neutral here.
-				//We first find the maximum neutral army count.
-				int maxNeut = 2; //they are default 2 unless there is a wasteland
-				for(Region r: current.getNeighbors()){
-					if(!r.ownedByPlayer(myName) && !r.ownedByPlayer(opponentName) && r.getArmies() > maxNeut)
-						maxNeut = r.getArmies();
-				}
-				//Do we already have enough?
-				maxNeut = 2 * maxNeut;
-				if(maxNeut > current.getArmies()){
-					current.setWantedArmies(maxNeut - current.getArmies());
-				}
-				//update to prevent persistance
-				else{
-					current.setWantedArmies(0);
-				}
+			if(visibleRegions.get(i).ownedByPlayer(myName) && visibleRegions.get(i).isBorder()){
+				deployableRegions.add(visibleRegions.get(i));
 			}
 		}
+		//set up int []'s for each of id's and planned deployment
+		int[] ids = new int[deployableRegions.size()];
+		int[] deployments = new int[deployableRegions.size()];
 		
-		
-		//If we want more for enemies than we can give, then give all to those based on ratio
-		if(totalWantedEnemy > armiesToDeploy){
-			for(int i = 0; i < deployRegions.size(); i++){
-				Region current = deployRegions.get(i);
-				if(current.hasEnemy(opponentName))
-					current.setWantedArmies((int) ((current.getWantedArmies()/(double)totalWantedEnemy) * armiesToDeploy));
-				else
-					current.setWantedArmies(0); //we are giving all to endangered areas
-					//note the effect this has on truncated values: any remaining armies due to truncation are added
-					//to a location(s) that was given armies
-			} 
-		}else{
-			//all of our wanted values in endangered areas are correct already	
-			int armiesLeft = armiesToDeploy - totalWantedEnemy;
-				
-			//for all of the neutral places we see in list, subtract the wanted value from the armiesLeft
-			//if the result is greater than 0, continue, otherwise set wanted to 0
-			for(int i = 0; i < deployRegions.size(); i++){
-				Region current = deployRegions.get(i);
-				if(!current.hasEnemy(opponentName)){
-					armiesLeft = armiesLeft - current.getWantedArmies(); 
-					if(armiesLeft < 0){
-						current.setWantedArmies(0);
-					}
-				}
-			}
-		
+		//set up ids
+		for(int i = 0; i < ids.length; i++){
+			ids[i] = deployableRegions.get(i).getId();
 		}
-		//check and see how many we have allocated
-		int allocated = 0;
-		for(int i = 0; i < deployRegions.size(); i++){
-			allocated += deployRegions.get(i).getWantedArmies();
-		}
-		
-		//avoid infinite loop:
-		//if we didnt NEED armies anywhere, disperse them amongst the edges
-		if(allocated == 0){
-			//for each of the border regions, just keep adding one to plan there until we are out
-			int k = 0;
-			while(allocated < armiesToDeploy){
-				if(k < deployRegions.size()){
-					deployRegions.get(k).setWantedArmies(deployRegions.get(k).getWantedArmies() + 1);
-					allocated++;
-					k++;
-				}else{
-					k = 0;
-				}
+		//set up initial configuration
+		double probability = 1.0/ids.length;
+		int deployed = 0;
+		int k = 0;
+		while(deployed != armiesToDeploy){
+			if(Math.random() > probability){
+				deployments[k]++;
+				deployed++;
 			}
-		}else{
-		
-			//until we have planned all remaining armies, go to every place we planned to deploy to and add an army
-			int i = 0;
-			while(allocated < armiesToDeploy){
-				if(i < deployRegions.size()){
-					if(deployRegions.get(i).getWantedArmies() > 0){
-						deployRegions.get(i).setWantedArmies(deployRegions.get(i).getWantedArmies() + 1); //increment how many we plan to add
-						allocated++;
-					}
-					i++; //move to next
-				}else{
-					i = 0; //go back to start of list
-				}
-			}
+			k = (k+1) % ids.length;
 		}
-		
-		//Give our completed plans to the arraylist to be returned!
-		for(int i=0; i < deployRegions.size(); i++){
-			Region current = deployRegions.get(i);
-			if(current.getWantedArmies() > 0){
-				placeArmiesMoves.add(new PlaceArmiesMove(myName, current, current.getWantedArmies()));
-				//UPDATE REGIONS' ARMIES FOR ATTACK PLANNING******
-				current.setArmies(current.getArmies() + current.getWantedArmies());
-				//DEBUG
-			//	System.err.println("Tried placing " + current.getWantedArmies() +" on region " + current.getId());
-			}
-		}
+			
 		
 		
-		
-		
+		//TODO add deployed armies to the actual map regions before returning
 		
 		//go get 'em boy!
 		return placeArmiesMoves;
@@ -323,7 +217,90 @@ public class BotStarter implements Bot
 		//System.err.println("-------------END TURN--------------");
 		return attackTransferMoves;
 	}
-
+	
+	//note that "expected" may not be the best term, as it doesn't actually take into account probability 
+	//except to include a region after attack
+	/**
+	 * 
+	 * @param state botstate
+	 * @param visible bots
+	 * @param myName playerName
+	 * @return
+	 */
+	private double expectedUtilityAfter(BotState state, Map vis, String myName){
+		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
+		Map visible = vis.getMapCopy();
+		for(Region fromRegion : visible.getRegions())
+		{
+			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
+			{
+				//Attack
+				if(fromRegion.isBorder() && fromRegion.getArmies() > 1){ 
+					
+					//get list of regions I can attack
+					ArrayList<Region> attackable = new ArrayList<Region>();
+					for(int i = 0; i < fromRegion.getNeighbors().size(); i++){
+						Region current = fromRegion.getNeighbors().get(i);
+						if(!current.getPlayerName().equals(myName)){
+							attackable.add(current);
+						}
+					}
+					
+					//I need two doubles for each Attackable Region: probability and Utility
+					//index of each corresponds to index of an attackable
+					double[] probabilities = new double[attackable.size()];
+					double[] utilities = new double[attackable.size()];
+					
+					//find each of the probabilities and utilities for taking an attackable region
+					for(int i =0;i< attackable.size(); i++){
+						Region current = attackable.get(i);
+						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
+						//compute the Utility of the map if I do take it
+						//does not take into account armies if that matters in future
+						Map visible1 = state.getVisibleMap();
+						//make the region in question mine **this should work...I think
+						for(int k = 0; k < visible1.regions.size(); k++){
+							if(visible1.regions.get(k).getId() == current.getId()){
+								String regionOwner = visible1.regions.get(k).getPlayerName();
+								visible1.regions.get(k).setPlayerName(myName);
+								utilities[i] = visible1.Utility(myName, state.getOpponentPlayerName());
+								visible1.regions.get(k).setPlayerName(regionOwner); //restore order. Don't want to consider it as ours next time!
+								break; //we got it.
+							}
+						}
+						
+					}
+					boolean[] willingToTry = new boolean[attackable.size()];
+					//give answer for each index
+					for(int i = 0; i<probabilities.length; i++){
+						if(probabilities[i] > .5) willingToTry[i] = true;
+						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
+					}
+					//find the max utility of the ones we are willing to try.
+					int indexMax = -1;
+					double maxUtil = -Double.MAX_VALUE;
+					for(int i = 0; i < utilities.length; i++){
+						if(willingToTry[i] && utilities[i] > maxUtil){
+							indexMax = i;
+							maxUtil = utilities[i];
+						}
+					}
+					//If we were willing to do any, do that best one with all we got.
+					if(indexMax != -1){
+						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
+					}
+					
+				}
+			}
+		}
+		//go through and make attacking regions our own
+		for(AttackTransferMove move: attackTransferMoves){
+			visible.getRegion(move.getToRegion().getId()).setPlayerName(myName);
+		}
+		
+		//we could perhaps improve this by accounting for the probabilities in the expected value itself
+		return visible.Utility(myName, state.getOpponentPlayerName());
+	}
 	
 	private static double probabilityToTake(double attackers, double defenders){
 		double probability = 0;
@@ -380,6 +357,21 @@ public class BotStarter implements Bot
 			res = res.multiply(BigInteger.valueOf(i));
 		}
 		return(res);
+	}
+	
+	/**
+	 * 
+	 * @param startTime time turn started
+	 * @return the value of T for current time
+	 */
+	public static double computeT(long startTime){
+		long current = System.nanoTime();
+		long diff = (current - startTime ) / 1000;
+		current = current / 1000;
+        if(diff > 500){
+        	return 0;
+        }
+        return -1 + (500/diff);
 	}
 	
 	public static void main(String[] args)
