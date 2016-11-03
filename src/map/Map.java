@@ -12,6 +12,8 @@ package map;
 
 import java.util.LinkedList;
 
+import bot.BotStarter;
+
 public class Map {
 	
 	public LinkedList<Region> regions;
@@ -141,11 +143,20 @@ public class Map {
 		double util = 0; //calculated utility value
 		int owned = 0; //number of regions owned in a super region
 		int enemyOwned = 0; //number of regions the enemy owns in a super region
+		double enemyAttackers = 0;
 		
 		//for every region add one point of utility if we own it, and take one away if the enemy does
 		for(int i=0;i<regions.size();i++){
-			if(regions.get(i).getPlayerName().equals(myName))util++;
+			for(int j=0;j<regions.get(i).getNeighbors().size();j++){
+				if(regions.get(i).isBorder()){
+					if(regions.get(i).getNeighbors().get(j).getPlayerName().equals(opponent))enemyAttackers += regions.get(i).getNeighbors().get(j).getArmies();
+				}
+			}
+			//if a border region is in danger of being taken (probability greater than 0.5) do not include it in utility
+			if(regions.get(i).getPlayerName().equals(myName) && regions.get(i).isBorder() && BotStarter.probabilityToTake(enemyAttackers, regions.get(i).getArmies())> 0.5);
+			else if(regions.get(i).getPlayerName().equals(myName))util++;
 			else if(regions.get(i).getPlayerName().equals(opponent))util--;
+			enemyAttackers = 0;
 		}
 		
 		//for every super region add to utility (total/owned regions) * the super region army bonus
@@ -161,8 +172,30 @@ public class Map {
 			//if the enemy owns at least one region in a super region, take away one point for every one we own in that super region
 			if(owned != superRegions.get(i).getSubRegions().size() && enemyOwned > 0)util -= owned;
 			
-			//if we own all regions in a super region, add an arbitrarily large bonus ******Jacob changed to be super region bonus amount
+			//if we own all regions in a super region, add super region bonus amount
 			if(owned == superRegions.get(i).getSubRegions().size())util += superRegions.get(i).getArmiesReward();
+			
+			//find number of enemy attackers around a region
+			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
+				for(int k=0;k<superRegions.get(i).getSubRegions().get(j).getNeighbors().size();k++){
+					if(superRegions.get(i).getSubRegions().get(j).isBorder()){
+						if(superRegions.get(i).getSubRegions().get(j).getNeighbors().get(k).getPlayerName().equals(opponent))enemyAttackers += superRegions.get(i).getSubRegions().get(j).getNeighbors().get(k).getArmies();
+					}
+				}
+			}
+			
+			//if the probability that the enemy takes a region in a super region we own is greater than
+			//0.5, then subtract the super region bonus from the utility
+			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
+				if(owned == superRegions.get(i).getSubRegions().size() && BotStarter.probabilityToTake(enemyAttackers, superRegions.get(i).getSubRegions().get(j).getArmies()) > 0.5){
+					util -= superRegions.get(i).getArmiesReward();
+					break;
+				}
+			}
+			
+			owned = 0;
+			enemyOwned = 0;
+			enemyAttackers = 0;
 		}
 		
 		return util;

@@ -325,7 +325,7 @@ public class BotStarter implements Bot
 	}
 
 	
-	private static double probabilityToTake(double attackers, double defenders){
+	public static double probabilityToTake(double attackers, double defenders){
 		double probability = 0;
 		
 		//if they have less than .84*(.6*attackers), then we take them for sure => .504 * attackers = #certain defender death
