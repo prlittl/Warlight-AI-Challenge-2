@@ -50,9 +50,10 @@ public class Region {
 		superRegion.addSubRegion(this);
 	}
 	
+	//TODO Trace exception
 	public void addNeighbor(Region neighbor)
 	{
-		if(!neighbors.contains(neighbor))
+		if(neighbor != null && !neighbors.contains(neighbor)) //added null check to avoid exception. may not solve issue...
 		{
 			neighbors.add(neighbor);
 			neighbor.addNeighbor(this);

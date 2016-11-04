@@ -51,7 +51,7 @@ public class BotStarter implements Bot
 		}
 		int regionId = state.getPickableStartingRegions().get(choice).getId();
 		Region startingRegion = state.getFullMap().getRegion(regionId);
-		
+		System.err.println("Starting Regions----");
 		return startingRegion;
 	}
 
@@ -60,32 +60,31 @@ public class BotStarter implements Bot
 	 * This method is called for at first part of each round. 
 	 * 
 	 * The algorithm is as follows:
-	 * 	Determine which regions are deployable
-	 * 	Figure out how many regions we want to deploy at each region
-	 * 	-deploy to places that need defending first
-	 * 	-if the total amount of armies needed for defense is larger than the total we have
-	 * 		-give all regions based on ratio to defense
-	 *   otherwise give what is needed to defense, then give what is needed for each non-endangered territory for expansion	
-	 * 	TODO verify adding wanted armies to the region's armies carries through to attack phase now
+	 * 	Find which regions we can deploy to
+	 *  give a random initial configuration of deployed armies
+	 *  Run Simulated Annealing for 500ms (the time alloted each round). Any time it takes over that to return 
+	 *  	will be deducted from the 10000ms time bank
+	 *  Prepare Return list and adjust current values of armies for the visible map.
 	 * @return The list of PlaceArmiesMoves for one round
 	 */
 	public ArrayList<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) 
 	{
 		long startTime = System.nanoTime();
-		long currentTime = startTime;
+		double T = 500;
 		ArrayList<PlaceArmiesMove> placeArmiesMoves = new ArrayList<PlaceArmiesMove>();
 		String myName = state.getMyPlayerName();
 		String opponentName = state.getOpponentPlayerName();
 		int armiesToDeploy = state.getStartingArmies();
-		LinkedList<Region> visibleRegions = state.getVisibleMap().getRegions();
+		Map mapCopy = state.getVisibleMap().getMapCopy();
+		LinkedList<Region> visibleRegions = mapCopy.getRegions();
 		ArrayList<Region> deployableRegions = new ArrayList<Region>();
-		
 		//first, get our border regions and put them in deployable regions
 		for(int i = 0; i < visibleRegions.size(); i++){
 			if(visibleRegions.get(i).ownedByPlayer(myName) && visibleRegions.get(i).isBorder()){
 				deployableRegions.add(visibleRegions.get(i));
 			}
 		}
+		System.err.println("--------------Place------------");
 		//set up int []'s for each of id's and planned deployment
 		int[] ids = new int[deployableRegions.size()];
 		int[] deployments = new int[deployableRegions.size()];
@@ -95,20 +94,53 @@ public class BotStarter implements Bot
 			ids[i] = deployableRegions.get(i).getId();
 		}
 		//set up initial configuration
+		
 		double probability = 1.0/ids.length;
 		int deployed = 0;
 		int k = 0;
+		System.err.println("--------------deploy loop-------------");
 		while(deployed != armiesToDeploy){
-			if(Math.random() > probability){
+			if(Math.random() < probability){
 				deployments[k]++;
 				deployed++;
 			}
 			k = (k+1) % ids.length;
 		}
+		//update mapCopy to match deployments
+		for(int i = 0; i < ids.length; i++){
+			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() + deployments[i]);
+		}
+		System.err.println(mapCopy.regions.size() + " map copy regions. ");
+		//get current Utility
+		double currentUtil = mapCopy.Utility(myName, opponentName);
+		Map currentMap = mapCopy.getMapCopy();
+		//set up loop
+		System.err.println("simulated annealling loop----------");
+		while(true){
+			if(T == 0) break; //use the current deployment configuration ****Add max UTIL memory?
+			mapCopy.getRandomSuccessor(ids, deployments);
+			//get the random successor's Utility
+			double next = mapCopy.Utility(myName, opponentName);
+			double deltaE = next - currentUtil;
+			if(deltaE > 0){//current = next
+				currentMap = mapCopy.getMapCopy();//separate so it doesn't update!
+				currentUtil = next;
+			}else{
+				double acceptProb = Math.exp(deltaE/T);
+				if(Math.random() < acceptProb){
+					currentMap=mapCopy.getMapCopy();
+					currentUtil = next;
+				}	
+			}
 			
-		
-		
-		//TODO add deployed armies to the actual map regions before returning
+			T = computeT(startTime);
+		}
+		System.err.println("----end sim anneal loop---");
+		for(int i = 0; i < ids.length; i++){
+			placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
+			//add our plan to the total armies of the regions.
+			state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + deployments[i]);
+		}
 		
 		//go get 'em boy!
 		return placeArmiesMoves;
@@ -371,7 +403,9 @@ public class BotStarter implements Bot
         if(diff > 500){
         	return 0;
         }
-        return -1 + (500/diff);
+        if(diff != 0)
+        	return -1 + (500/diff);
+        else return 0;
 	}
 	
 	public static void main(String[] args)

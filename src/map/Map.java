@@ -67,18 +67,21 @@ public class Map {
 	 */
 	public Map getMapCopy() {
 		Map newMap = new Map();
-		for(SuperRegion sr : superRegions) //copy superRegions
+		for(int i = 0; i < superRegions.size(); i++) //copy superRegions
 		{
+			SuperRegion sr = superRegions.get(i);
 			SuperRegion newSuperRegion = new SuperRegion(sr.getId(), sr.getArmiesReward());
 			newMap.add(newSuperRegion);
 		}
-		for(Region r : regions) //copy regions
+		for(int i = 0; i < regions.size(); i++) //copy regions
 		{
+			Region r = regions.get(i);
 			Region newRegion = new Region(r.getId(), newMap.getSuperRegion(r.getSuperRegion().getId()), r.getPlayerName(), r.getArmies());
 			newMap.add(newRegion);
 		}
-		for(Region r : regions) //add neighbors to copied regions
+		for(int i = 0; i <regions.size(); i++) //add neighbors to copied regions
 		{
+			Region r = regions.get(i);
 			Region newRegion = newMap.getRegion(r.getId());
 			for(Region neighbor : r.getNeighbors())
 				newRegion.addNeighbor(newMap.getRegion(neighbor.getId()));
