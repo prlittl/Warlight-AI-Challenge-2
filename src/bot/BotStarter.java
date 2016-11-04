@@ -137,10 +137,12 @@ public class BotStarter implements Bot
 		}
 		System.err.println("----end sim anneal loop---");
 		for(int i = 0; i < ids.length; i++){
-			placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
-			//add our plan to the total armies of the regions.
-			state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + deployments[i]);
-		}
+			if(deployments[i] !=0){
+				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
+				//add our plan to the total armies of the regions.
+				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + deployments[i]);
+				}
+			}
 		
 		//go get 'em boy!
 		return placeArmiesMoves;

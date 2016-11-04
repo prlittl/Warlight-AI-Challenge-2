@@ -228,13 +228,13 @@ public class Map {
 		int from, to;
 		do
 		{
-			from = (int)(rand.nextDouble() * (deployed.length - 1));
+			from = (int)(rand.nextDouble() * (deployed.length));
 		} while(deployed[from] == 0);
 		
 		//Get a region to move to, making sure that it is not the same as the from region
 		do
 		{
-			to = (int)(rand.nextDouble() * (deployed.length - 1));
+			to = (int)(rand.nextDouble() * (deployed.length));
 		} while(to == from);
 		
 		deployed[from]--;
