@@ -51,7 +51,7 @@ public class BotStarter implements Bot
 		}
 		int regionId = state.getPickableStartingRegions().get(choice).getId();
 		Region startingRegion = state.getFullMap().getRegion(regionId);
-		System.err.println("Starting Regions----");
+		
 		return startingRegion;
 	}
 
@@ -76,6 +76,7 @@ public class BotStarter implements Bot
 		String opponentName = state.getOpponentPlayerName();
 		int armiesToDeploy = state.getStartingArmies();
 		Map mapCopy = state.getVisibleMap().getMapCopy();
+		
 		LinkedList<Region> visibleRegions = mapCopy.getRegions();
 		ArrayList<Region> deployableRegions = new ArrayList<Region>();
 		//first, get our border regions and put them in deployable regions
@@ -84,7 +85,7 @@ public class BotStarter implements Bot
 				deployableRegions.add(visibleRegions.get(i));
 			}
 		}
-		System.err.println("--------------Place------------");
+		
 		//set up int []'s for each of id's and planned deployment
 		int[] ids = new int[deployableRegions.size()];
 		int[] deployments = new int[deployableRegions.size()];
@@ -98,7 +99,7 @@ public class BotStarter implements Bot
 		double probability = 1.0/ids.length;
 		int deployed = 0;
 		int k = 0;
-		System.err.println("--------------deploy loop-------------");
+		
 		while(deployed != armiesToDeploy){
 			if(Math.random() < probability){
 				deployments[k]++;
@@ -110,12 +111,12 @@ public class BotStarter implements Bot
 		for(int i = 0; i < ids.length; i++){
 			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() + deployments[i]);
 		}
-		System.err.println(mapCopy.regions.size() + " map copy regions. ");
+		
 		//get current Utility
 		double currentUtil = mapCopy.Utility(myName, opponentName);
 		Map currentMap = mapCopy.getMapCopy();
 		//set up loop
-		System.err.println("simulated annealling loop----------");
+		
 		while(true){
 			if(T == 0) break; //use the current deployment configuration ****Add max UTIL memory?
 			mapCopy.getRandomSuccessor(ids, deployments);
@@ -135,7 +136,7 @@ public class BotStarter implements Bot
 			
 			T = computeT(startTime);
 		}
-		System.err.println("----end sim anneal loop---");
+		
 		for(int i = 0; i < ids.length; i++){
 			if(deployments[i] !=0){
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
@@ -264,6 +265,8 @@ public class BotStarter implements Bot
 	private double expectedUtilityAfter(BotState state, Map vis, String myName){
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
 		Map visible = vis.getMapCopy();
+		double CurrentUtility = visible.Utility(myName, state.getOpponentPlayerName());
+		ArrayList<Double> probList = new ArrayList<Double>();
 		for(Region fromRegion : visible.getRegions())
 		{
 			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
@@ -322,18 +325,29 @@ public class BotStarter implements Bot
 					//If we were willing to do any, do that best one with all we got.
 					if(indexMax != -1){
 						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
+						probList.add(probabilities[indexMax]);
 					}
 					
 				}
 			}
 		}
-		//go through and make attacking regions our own
-		for(AttackTransferMove move: attackTransferMoves){
+		String opponentName = state.getOpponentPlayerName();
+		//go through and make attacking regions our own, calculate the difference in utility
+		//sum the differences in utility * prob of each
+		//in this way, the bot will favor certainty
+		double sum = 0;
+		
+		for(int i = 0;i<attackTransferMoves.size(); i++){
+			AttackTransferMove move = attackTransferMoves.get(i);
+			String playerName = move.getToRegion().getPlayerName();
 			visible.getRegion(move.getToRegion().getId()).setPlayerName(myName);
+			sum += (visible.Utility(myName, opponentName)-CurrentUtility) * probList.get(i); //(new-old)*probNew; expected gain
+			//return to previous state TODO: armies changes???
+			visible.getRegion(move.getToRegion().getId()).setPlayerName(playerName);
 		}
 		
-		//we could perhaps improve this by accounting for the probabilities in the expected value itself
-		return visible.Utility(myName, state.getOpponentPlayerName());
+		
+		return sum;
 	}
 	
 	public static double probabilityToTake(double attackers, double defenders){
