@@ -113,15 +113,15 @@ public class BotStarter implements Bot
 		}
 		
 		//get current Utility
-		double currentUtil = mapCopy.Utility(myName, opponentName);
 		Map currentMap = mapCopy.getMapCopy();
+		double currentUtil = expectedUtilityAfter(state, currentMap, myName);
 		//set up loop
 		
 		while(true){
 			if(T == 0) break; //use the current deployment configuration ****Add max UTIL memory?
 			mapCopy.getRandomSuccessor(ids, deployments);
 			//get the random successor's Utility
-			double next = mapCopy.Utility(myName, opponentName);
+			double next = expectedUtilityAfter(state, mapCopy, myName);
 			double deltaE = next - currentUtil;
 			if(deltaE > 0){//current = next
 				currentMap = mapCopy.getMapCopy();//separate so it doesn't update!
@@ -136,7 +136,7 @@ public class BotStarter implements Bot
 			
 			T = computeT(startTime);
 		}
-		
+		System.err.println("Exited loop after: " + (System.nanoTime() - startTime)/1000000);
 		for(int i = 0; i < ids.length; i++){
 			if(deployments[i] !=0){
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
@@ -414,13 +414,13 @@ public class BotStarter implements Bot
 	 */
 	public static double computeT(long startTime){
 		long current = System.nanoTime();
-		long diff = (current - startTime ) / 1000000;
+		long diff = (long) ((current - startTime ) / 1000000.0);
         if(diff > 500){
         	return 0;
         }
         if(diff != 0)
-        	return -1 + (500/diff);
-        else return 0;
+        	return -1 + (500.0/diff);
+        else return 1; //it happened SUPER quick
 	}
 	
 	public static void main(String[] args)
