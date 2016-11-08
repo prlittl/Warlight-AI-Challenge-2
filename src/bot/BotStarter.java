@@ -160,8 +160,6 @@ public class BotStarter implements Bot
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
 		String myName = state.getMyPlayerName();
 		int armies = 0;
-		int maxTransfers = 10;
-		int transfers = 0;
 		
 		for(Region fromRegion : state.getVisibleMap().getRegions())
 		{
@@ -169,14 +167,13 @@ public class BotStarter implements Bot
 			{
 				//New transfer code
 				//Tested
-				if(!fromRegion.isBorder() && fromRegion.getArmies() > 1 && transfers < maxTransfers)
+				if(!fromRegion.isBorder() && fromRegion.getArmies() > 1)
 				{
 					Region nextStep = fromRegion.closestAdjacentToBorder();
 					if(nextStep != null)
 					{
 						armies = fromRegion.getArmies() - 1;
 						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, nextStep, armies));
-						transfers++;
 						break;
 					}
 				}
