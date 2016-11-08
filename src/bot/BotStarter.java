@@ -414,8 +414,7 @@ public class BotStarter implements Bot
 	 */
 	public static double computeT(long startTime){
 		long current = System.nanoTime();
-		long diff = (current - startTime ) / 1000;
-		current = current / 1000;
+		long diff = (current - startTime ) / 1000000;
         if(diff > 500){
         	return 0;
         }
