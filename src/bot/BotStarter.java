@@ -116,6 +116,9 @@ public class BotStarter implements Bot
 		Map currentMap = mapCopy.getMapCopy();
 		double currentUtil = expectedUtilityAfter(state, currentMap, myName);
 		//set up loop
+		double maxUtil = -Double.MAX_VALUE;
+		
+		int[] Max_deployments = new int[deployableRegions.size()];
 		
 		while(true){
 			if(T == 0) break; //use the current deployment configuration ****Add max UTIL memory?
@@ -126,6 +129,10 @@ public class BotStarter implements Bot
 			if(deltaE > 0){//current = next
 				currentMap = mapCopy.getMapCopy();//separate so it doesn't update!
 				currentUtil = next;
+				if(next > maxUtil){
+					maxUtil = next;
+					Max_deployments = Arrays.copyOf(deployments, deployments.length);
+				}
 			}else{
 				double acceptProb = Math.exp(deltaE/T);
 				if(Math.random() < acceptProb){
@@ -141,7 +148,7 @@ public class BotStarter implements Bot
 			if(deployments[i] !=0){
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
 				//add our plan to the total armies of the regions.
-				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + deployments[i]);
+				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + Max_deployments[i]);
 				}
 			}
 		
