@@ -145,7 +145,7 @@ public class BotStarter implements Bot
 		}
 		for(int i = 0; i < ids.length; i++){
 			if(deployments[i] !=0){
-				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
+				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), Max_deployments[i]));
 				//add our plan to the total armies of the regions.
 				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + Max_deployments[i]);
 				}
@@ -166,6 +166,9 @@ public class BotStarter implements Bot
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
 		String myName = state.getMyPlayerName();
 		int armies = 0;
+		
+		//TODO: REMOVE DEBUG STATEMENT
+		System.err.println("ROUND " + state.getRoundNumber() + "---------------------------------");
 		
 		for(Region fromRegion : state.getVisibleMap().getRegions())
 		{
@@ -201,7 +204,7 @@ public class BotStarter implements Bot
 					double[] utilities = new double[attackable.size()];
 					
 					//find each of the probabilities and utilities for taking an attackable region
-					for(int i =0;i< attackable.size(); i++){
+					for(int i = 0; i < attackable.size(); i++) {
 						Region current = attackable.get(i);
 						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
 						//compute the Utility of the map if I do take it
@@ -218,6 +221,8 @@ public class BotStarter implements Bot
 							}
 						}
 						
+						//TODO: REMOVE DEBUG STATEMENT
+						System.err.println("Possible attack from region " + fromRegion.getId() + " to region " + attackable.get(i).getId() + " with probability " + probabilities[i] + " and utility " + utilities[i] + ".");
 					}
 					boolean[] willingToTry = new boolean[attackable.size()];
 					//give answer for each index
