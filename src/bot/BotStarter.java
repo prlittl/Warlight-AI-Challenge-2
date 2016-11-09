@@ -143,7 +143,6 @@ public class BotStarter implements Bot
 			
 			T = computeT(startTime);
 		}
-		System.err.println("Exited loop after: " + (System.nanoTime() - startTime)/1000000);
 		for(int i = 0; i < ids.length; i++){
 			if(deployments[i] !=0){
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), deployments[i]));
@@ -423,7 +422,7 @@ public class BotStarter implements Bot
         	return 0;
         }
         if(diff != 0)
-        	return -1 + (500.0/diff);
+        	return -1 + (500.0/diff); //TODO change?
         else return 1; //it happened SUPER quick
 	}
 	
