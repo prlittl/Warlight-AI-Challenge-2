@@ -223,7 +223,7 @@ public class BotStarter implements Bot
 					boolean[] willingToTry = new boolean[attackable.size()];
 					//give answer for each index
 					for(int i = 0; i<probabilities.length; i++){
-						if(probabilities[i] > .5) willingToTry[i] = true;
+						if(probabilities[i] > .675) willingToTry[i] = true; //TODO prob
 						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
 					}
 					//find the max utility of the ones we are willing to try.
@@ -314,7 +314,7 @@ public class BotStarter implements Bot
 					boolean[] willingToTry = new boolean[attackable.size()];
 					//give answer for each index
 					for(int i = 0; i<probabilities.length; i++){
-						if(probabilities[i] > .5) willingToTry[i] = true;
+						if(probabilities[i] > .675) willingToTry[i] = true; //TODO prob
 						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
 					}
 					//find the max utility of the ones we are willing to try.
