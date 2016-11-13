@@ -148,6 +148,35 @@ public class BotStarter implements Bot
 			
 			T = computeT(startTime);
 		}
+		int armiesToDisperse = 0;
+		//for those deployments which do not add any Utility, put those on another index > 0, if such exists
+		for(int i = 0; i < Max_deployments.length; i++){
+			mapCopy = state.getVisibleMap();
+			double without = this.expectedUtilityAfter(state, mapCopy, myName);
+			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() + Max_deployments[i]);
+			double with = this.expectedUtilityAfter(state, mapCopy, myName);
+			if(with <= without){
+				armiesToDisperse += Max_deployments[i];
+				Max_deployments[i] = 0;
+			}
+		}
+		//find out if there are places to deploy to after removing useless deployments
+		boolean canDisperse = false;
+		for(int i = 0; i < Max_deployments.length; i++){
+			if(Max_deployments[i] > 0){ canDisperse=true;break;}
+		}
+		if(canDisperse == false){
+			Max_deployments[0] = armiesToDisperse;
+		}else{
+			k=0;
+			while(armiesToDisperse > 0){ //spreads them about the better moves
+				if(Max_deployments[k] > 0){
+					Max_deployments[k]++;
+					armiesToDisperse--;
+				}
+				k = (k+1) % Max_deployments.length;
+			}
+		}
 		System.err.println("DEPLOYMENTS-----------------------------");
 		for(int i = 0; i < ids.length; i++){
 			if(Max_deployments[i] > 0){
