@@ -244,4 +244,42 @@ public class Map {
 		this.getRegion(ids[from]).setArmies(this.getRegion(ids[from]).getArmies() - 1);
 		this.getRegion(ids[to]).setArmies(this.getRegion(ids[to]).getArmies() + 1);
 	}
+	
+	/** Simulates the outcome of a set of attacks
+	 * @param fromId The region attacking from
+	 * @param attacks The number of armies to attack each bordering
+	 * @param toIds The ids of each border region
+	 * @param playerName The current player's name
+	 */
+	public void simulateAttacks(int fromId, int[] attacks, int[] toIds, String playerName)
+	{
+		if(attacks.length != toIds.length) return;
+		int attackers, defenders;
+		
+		for(int i = 0; i < attacks.length; i++)
+		{
+			if(toIds[i] != fromId)
+			{
+				attackers = attacks[i];
+				defenders = this.getRegion(toIds[i]).getArmies();
+				
+				/* If there is a good chance that all defenders will be destroyed,
+				 * simulate that we took over the defending region
+				 */
+				if(defenders < attackers * 0.6)
+				{
+					this.getRegion(toIds[i]).setPlayerName(playerName);
+					this.getRegion(toIds[i]).setArmies((int)(attackers - (defenders * .7)));
+					this.getRegion(fromId).setArmies(this.getRegion(fromId).getArmies() - attackers);
+				}
+				/* Otherwise, we simulate the losses of attacking and defending armies
+				 */
+				else
+				{
+					this.getRegion(toIds[i]).setArmies(Math.max(1, (int)(defenders - (attackers * 0.6))));
+					this.getRegion(toIds[i]).setArmies((int)(this.getRegion(fromId).getArmies() - Math.min(attackers, (defenders * 0.7))));
+				}
+			}
+		}
+	}
 }
