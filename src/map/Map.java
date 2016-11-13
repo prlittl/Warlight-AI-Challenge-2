@@ -230,7 +230,7 @@ public class Map {
 		do
 		{
 			from = (int)(rand.nextDouble() * (deployed.length));
-		} while(deployed[from] == 0);
+		} while(deployed[from] <= 0);
 		
 		//Get a region to move to, making sure that it is not the same as the from region
 		do

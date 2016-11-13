@@ -115,20 +115,24 @@ public class BotStarter implements Bot
 		//get current Utility
 		Map currentMap = mapCopy.getMapCopy();
 		double currentUtil = expectedUtilityAfter(state, currentMap, myName);
+		int [] curDeploy = new int[deployableRegions.size()];
 		//set up loop
 		double maxUtil = -Double.MAX_VALUE;
 		
-		int[] Max_deployments = new int[deployableRegions.size()];
+		int[] Max_deployments = Arrays.copyOf(deployments, deployments.length);
 		
 		while(true){
-			if(T == 0) break; //use the current deployment configuration ****Add max UTIL memory?
-			mapCopy.getRandomSuccessor(ids, deployments);
+			if(T == 0) break; 
+			curDeploy = Arrays.copyOf(deployments, deployments.length);
+			currentMap = mapCopy.getMapCopy();
+			currentMap.getRandomSuccessor(ids, curDeploy);
 			//get the random successor's Utility
 			double next = expectedUtilityAfter(state, mapCopy, myName);
 			double deltaE = next - currentUtil;
 			if(deltaE > 0){//current = next
-				currentMap = mapCopy.getMapCopy();//separate so it doesn't update!
+				mapCopy = currentMap.getMapCopy();
 				currentUtil = next;
+				deployments = Arrays.copyOf(curDeploy, curDeploy.length);
 				if(next > maxUtil){
 					maxUtil = next;
 					Max_deployments = Arrays.copyOf(deployments, deployments.length);
@@ -136,19 +140,23 @@ public class BotStarter implements Bot
 			}else{
 				double acceptProb = Math.exp(deltaE/T);
 				if(Math.random() < acceptProb){
-					currentMap=mapCopy.getMapCopy();
+					mapCopy = currentMap.getMapCopy();
 					currentUtil = next;
-				}	
+					deployments = Arrays.copyOf(curDeploy, curDeploy.length);
+				}
 			}
 			
 			T = computeT(startTime);
 		}
+		System.err.println("DEPLOYMENTS-----------------------------");
 		for(int i = 0; i < ids.length; i++){
-			if(deployments[i] !=0){
+			if(Max_deployments[i] > 0){
+				
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), Max_deployments[i]));
 				//add our plan to the total armies of the regions.
 				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + Max_deployments[i]);
 				}
+			System.err.println("deployment " + Max_deployments[i]);
 			}
 		
 		//go get 'em boy!
@@ -222,7 +230,7 @@ public class BotStarter implements Bot
 						}
 						
 						//TODO: REMOVE DEBUG STATEMENT
-						System.err.println("Possible attack from region " + fromRegion.getId() + " to region " + attackable.get(i).getId() + " with probability " + probabilities[i] + " and utility " + utilities[i] + ".");
+						System.err.println((fromRegion.getArmies() - 1) + " attack "+attackable.get(i).getArmies() + ": Possible attack from region " + fromRegion.getId() + " to region " + attackable.get(i).getId() + " with probability " + probabilities[i] + " and utility " + utilities[i] + ".");
 					}
 					boolean[] willingToTry = new boolean[attackable.size()];
 					//give answer for each index
