@@ -178,16 +178,17 @@ public class BotStarter implements Bot
 				k = (k+1) % Max_deployments.length;
 			}
 		}
-		System.err.println("DEPLOYMENTS-----------------------------");
-		for(int i = 0; i < ids.length; i++){
-			if(Max_deployments[i] > 0){
-				
+		System.err.println("\nDEPLOYMENTS ROUND " + state.getRoundNumber() + " -----------------------------");
+		for(int i = 0; i < ids.length; i++)
+		{
+			if(Max_deployments[i] > 0)
+			{
 				placeArmiesMoves.add(new PlaceArmiesMove(myName, state.getVisibleMap().getRegion(ids[i]), Max_deployments[i]));
 				//add our plan to the total armies of the regions.
 				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + Max_deployments[i]);
-				}
-			System.err.println("deployment " + Max_deployments[i]);
 			}
+			System.err.println("Deployment of  " + Max_deployments[i] + " armies to region " + ids[i] + ".");
+		}
 		
 		//go get 'em boy!
 		return placeArmiesMoves;
@@ -207,7 +208,7 @@ public class BotStarter implements Bot
 		int armies = 0;
 		
 		//TODO: REMOVE DEBUG STATEMENT
-		System.err.println("ROUND " + state.getRoundNumber() + "---------------------------------");
+		System.err.println("\nATTACKS ROUND " + state.getRoundNumber() + " ---------------------------------");
 		
 		for(Region fromRegion : state.getVisibleMap().getRegions())
 		{
@@ -266,7 +267,7 @@ public class BotStarter implements Bot
 					
 					//Use a hill-climbing search to find the 'best' attack combination
 					//TODO: Find a better way to limit iterations
-					for(int i = 0; i < 1000; i++)
+					for(int i = 0; i < 2000; i++)
 					{	
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
@@ -285,12 +286,38 @@ public class BotStarter implements Bot
 						}
 					}
 					
+					//TODO: Remove debug statements
+					if(attacks.length > 0)
+					{
+						System.err.println("Planned attacks from region " + fromRegion.getId() + ":");
+						System.err.printf("IDs: %03d", ids[0]);
+						for(int i = 1; i < ids.length; i++)
+						{
+							System.err.printf(", %03d", ids[i]);
+						}
+						System.err.println();
+						
+						System.err.printf("Atk: %03d", attacks[0]);
+						for(int i = 1; i < attacks.length; i++)
+						{
+							System.err.printf(", %03d", attacks[i]);
+						}
+						System.err.println();
+						
+						System.err.printf("Def: %03d", state.getVisibleMap().getRegion(ids[0]).getArmies());
+						for(int i = 1; i < ids.length; i++)
+						{
+							System.err.printf(", %03d", state.getVisibleMap().getRegion(ids[i]).getArmies());
+						}
+						System.err.println();
+					}
+					
 					//Take the attack actions decided
 					for(int i = 0; i < attacks.length; i++)
 					{
-						if(fromRegion.getId() != ids[i])
+						if(fromRegion.getId() != ids[i] && attacks[i] > 0)
 						{
-							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getFullMap().getRegion(ids[i]), attacks[i]));						
+							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
 						}
 					}
 					mapCopy.simulateAttacks(fromRegion.getId(), attacks, ids, myName);

@@ -266,7 +266,7 @@ public class Map {
 				/* If there is a good chance that all defenders will be destroyed,
 				 * simulate that we took over the defending region
 				 */
-				if(defenders < attackers * 0.6)
+				if(defenders < attackers * 0.5)
 				{
 					this.getRegion(toIds[i]).setPlayerName(playerName);
 					this.getRegion(toIds[i]).setArmies((int)(attackers - (defenders * .7)));
