@@ -262,7 +262,7 @@ public class BotStarter implements Bot
 					}
 					
 					//set up initial configuration of attacks
-					Map currMap;
+					
 					int[] currAttacks;
 					double lastUtil = -Double.MAX_VALUE;
 					double currUtil = -Double.MAX_VALUE;
@@ -301,6 +301,16 @@ public class BotStarter implements Bot
 						{
 							lastUtil = currUtil;
 							attacks = currAttacks;
+						}else if(currUtil != lastUtil){
+							if(Math.random() > i/1950.0){
+								lastUtil = currUtil;
+								attacks = currAttacks;
+							}
+						}else{ //50-50
+							if(Math.random() < .5){
+								lastUtil = currUtil;
+								attacks = currAttacks;
+							}
 						}
 					}
 					
@@ -468,7 +478,7 @@ public class BotStarter implements Bot
 					
 					//Use a hill-climbing search to find the 'best' attack combination
 					//TODO: Find a better way to limit iterations
-					for(int i = 0; i < 1000; i++)
+					for(int i = 0; i < 250; i++)
 					{	
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
@@ -488,8 +498,16 @@ public class BotStarter implements Bot
 						{
 							lastUtil = currUtil;
 							attacks = currAttacks;
-						}else{//TODO accept with probability proportional to how long its been in loop
-							
+						}else if(currUtil != lastUtil){
+							if(Math.random() > i/240.0){
+								lastUtil = currUtil;
+								attacks=currAttacks;
+							}
+						}else{
+							if(Math.random() > .5){ //50-50 for equal (plateau)
+								lastUtil = currUtil;
+								attacks=currAttacks;
+							}
 						}
 					}
 					//Take the attack actions decided
@@ -566,12 +584,12 @@ public class BotStarter implements Bot
 		//sum the differences in utility * prob of each
 		//in this way, the bot will favor certainty
 		double sum = 0;
-		mapCopy = vis.getMapCopy();
+		
 		for(int i = 0;i<attackTransferMoves.size(); i++){
 			AttackTransferMove move = attackTransferMoves.get(i);
 			String playerName = move.getToRegion().getPlayerName();
 			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(myName);
-			sum += (mapCopy.Utility(myName, opponentName)-CurrentUtility) * probabilityToTake(move.getArmies(), move.getToRegion().getArmies()); //(new-old)*probNew; expected gain
+			sum += (mapCopy.Utility(myName, opponentName)) * probabilityToTake(move.getArmies(), move.getToRegion().getArmies()); //(new-old)*probNew; expected gain
 			//return to previous state TODO: armies changes??? 
 			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(playerName);
 		}
