@@ -589,7 +589,7 @@ public class BotStarter implements Bot
 			AttackTransferMove move = attackTransferMoves.get(i);
 			String playerName = move.getToRegion().getPlayerName();
 			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(myName);
-			sum += (mapCopy.Utility(myName, opponentName)) * probabilityToTake(move.getArmies(), move.getToRegion().getArmies()); //(new-old)*probNew; expected gain
+			sum += (mapCopy.Utility(myName, opponentName)- CurrentUtility) * probabilityToTake(move.getArmies(), move.getToRegion().getArmies()); //(new-old)*probNew; expected gain
 			//return to previous state TODO: armies changes??? 
 			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(playerName);
 		}
