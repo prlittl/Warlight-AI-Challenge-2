@@ -36,6 +36,7 @@ import move.PlaceArmiesMove;
 
 public class BotStarter implements Bot 
 {
+	int[] startingAttacks; 
 	@Override
 	/**
 	 * A method that returns which region the bot would like to start on, the pickable regions are stored in the BotState.
@@ -266,17 +267,9 @@ public class BotStarter implements Bot
 					int[] currAttacks;
 					double lastUtil = -Double.MAX_VALUE;
 					double currUtil = -Double.MAX_VALUE;
-					double probability = 1.0/ids.length;
-					int attacked = 0;
-					int k = 0;
 					
-					while(attacked != (fromRegion.getArmies() - 1)){
-						if(Math.random() < probability){
-							attacks[k]++;
-							attacked++;
-						}
-						k = (k+1) % ids.length;
-					}
+					
+					attacks = startingAttacks;
 					long startTime = System.nanoTime();
 					double T = 500;
 					double deltaE = 0;
@@ -517,6 +510,7 @@ public class BotStarter implements Bot
 						}
 					}
 					attacks = maxAttacks;
+					startingAttacks = attacks;
 					//Take the attack actions decided
 					for(int i = 0; i < attacks.length; i++)
 					{
