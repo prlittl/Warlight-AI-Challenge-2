@@ -250,6 +250,7 @@ public class Map {
 	 * @param attacks The number of armies to attack each bordering
 	 * @param toIds The ids of each border region
 	 * @param playerName The current player's name
+	 * TODO: make accurate
 	 */
 	public void simulateAttacks(int fromId, int[] attacks, int[] toIds, String playerName)
 	{
@@ -262,24 +263,28 @@ public class Map {
 			{
 				attackers = attacks[i];
 				defenders = this.getRegion(toIds[i]).getArmies();
+				int attackersDestroyed = (int) (.7 * defenders)+1; //note: these are expected values TODO: +1?
+				int defendersDestroyed = (int)(.6 * attackers)+1;  //true value is Gaussian, centered here
 				
-				/* If there is a good chance that all defenders will be destroyed,
-				 * simulate that we took over the defending region
-				 */
-				if(defenders < attackers * 0.5)
-				{
+				if(defendersDestroyed >= defenders){//we predict a win, so its ours. also update armies
 					this.getRegion(toIds[i]).setPlayerName(playerName);
-					this.getRegion(toIds[i]).setArmies((int)(attackers - (defenders * .7)));
+					this.getRegion(toIds[i]).setArmies(attackers-attackersDestroyed);
 					this.getRegion(fromId).setArmies(this.getRegion(fromId).getArmies() - attackers);
-				}
-				/* Otherwise, we simulate the losses of attacking and defending armies
-				 */
-				else
-				{
-					this.getRegion(toIds[i]).setArmies(Math.max(1, (int)(defenders - (attackers * 0.6))));
-					this.getRegion(toIds[i]).setArmies((int)(this.getRegion(fromId).getArmies() - Math.min(attackers, (defenders * 0.7))));
+				}else{ //we predict loss for that attack. Just update armies
+					attackersDestroyed = Math.min(attackers, attackersDestroyed); //enemy cannot defeat what did not attack
+					//defendersDestroyed ought to be fine, as if would have caught it
+					this.getRegion(fromId).setArmies(this.getRegion(fromId).getArmies() - attackersDestroyed);
+					this.getRegion(toIds[i]).setArmies(this.getRegion(toIds[i]).getArmies()-defendersDestroyed);
 				}
 			}
 		}
+	}
+	
+	public void undoSimulation(int fromId, int[] attacks,int[] defenders, int[] toIds,String[]names, int totalOnAttacker){
+		for(int i=0; i < toIds.length; i++){
+			this.getRegion(toIds[i]).setArmies(defenders[i]);
+			this.getRegion(toIds[i]).setPlayerName(names[i]);
+		}
+		this.getRegion(fromId).setArmies(totalOnAttacker);
 	}
 }

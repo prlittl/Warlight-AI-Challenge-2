@@ -74,7 +74,7 @@ public class BotStarter implements Bot
 		double T = 500;
 		ArrayList<PlaceArmiesMove> placeArmiesMoves = new ArrayList<PlaceArmiesMove>();
 		String myName = state.getMyPlayerName();
-		String opponentName = state.getOpponentPlayerName();
+		
 		int armiesToDeploy = state.getStartingArmies();
 		Map mapCopy = state.getVisibleMap().getMapCopy();
 		
@@ -108,32 +108,35 @@ public class BotStarter implements Bot
 			}
 			k = (k+1) % ids.length;
 		}
-		//update mapCopy to match deployments
-		for(int i = 0; i < ids.length; i++){
-			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() + deployments[i]);
-		}
+		
 		
 		//get current Utility
-		Map currentMap = mapCopy.getMapCopy();
-		double currentUtil = expectedUtilityAfter(state, currentMap, myName);
-		int [] curDeploy = new int[deployableRegions.size()];
+		applyDeployments(mapCopy, deployments, ids);
+		double currentUtil = expectedUtilityAfter(state, mapCopy, myName);
+		deapplyDeployments(mapCopy, deployments, ids);
+		
+		int [] oldDeploy = new int[deployments.length];
 		//set up loop
 		double maxUtil = -Double.MAX_VALUE;
 		
 		int[] Max_deployments = Arrays.copyOf(deployments, deployments.length);
-		
+		int count = 0;
+		double next, deltaE;
 		while(true){
 			if(T == 0) break; 
-			curDeploy = Arrays.copyOf(deployments, deployments.length);
-			currentMap = mapCopy.getMapCopy();
-			currentMap.getRandomSuccessor(ids, curDeploy);
+			oldDeploy = Arrays.copyOf(deployments, deployments.length);
+			
+			randomPermutation(deployments);
+			applyDeployments(mapCopy, deployments, ids);
+			next = expectedUtilityAfter(state, mapCopy, myName);
+			deapplyDeployments(mapCopy, deployments, ids);
+			
 			//get the random successor's Utility
-			double next = expectedUtilityAfter(state, mapCopy, myName);
-			double deltaE = next - currentUtil;
-			if(deltaE > 0){//current = next
-				mapCopy = currentMap.getMapCopy();
+			
+			deltaE = next - currentUtil;
+			if(deltaE > 0){//old = new
 				currentUtil = next;
-				deployments = Arrays.copyOf(curDeploy, curDeploy.length);
+				
 				if(next > maxUtil){
 					maxUtil = next;
 					Max_deployments = Arrays.copyOf(deployments, deployments.length);
@@ -141,21 +144,25 @@ public class BotStarter implements Bot
 			}else{
 				double acceptProb = Math.exp(deltaE/T);
 				if(Math.random() < acceptProb){
-					mapCopy = currentMap.getMapCopy();
 					currentUtil = next;
-					deployments = Arrays.copyOf(curDeploy, curDeploy.length);
+				}else{
+					deployments = oldDeploy;
 				}
 			}
-			
+			count++;
 			T = computeT(startTime);
 		}
+		//TODO
+		System.err.println(count + " Simulated Annealing Loops done******");
 		int armiesToDisperse = 0;
 		//for those deployments which do not add any Utility, put those on another index > 0, if such exists
 		for(int i = 0; i < Max_deployments.length; i++){
-			mapCopy = state.getVisibleMap();
+			
 			double without = this.expectedUtilityAfter(state, mapCopy, myName);
 			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() + Max_deployments[i]);
 			double with = this.expectedUtilityAfter(state, mapCopy, myName);
+			mapCopy.getRegion(ids[i]).setArmies(mapCopy.getRegion(ids[i]).getArmies() - Max_deployments[i]);
+			
 			if(with <= without){
 				armiesToDisperse += Max_deployments[i];
 				Max_deployments[i] = 0;
@@ -178,7 +185,7 @@ public class BotStarter implements Bot
 				k = (k+1) % Max_deployments.length;
 			}
 		}
-		System.err.println("\nDEPLOYMENTS ROUND " + state.getRoundNumber() + " -----------------------------");
+	//	System.err.println("\nDEPLOYMENTS ROUND " + state.getRoundNumber() + " -----------------------------");
 		for(int i = 0; i < ids.length; i++)
 		{
 			if(Max_deployments[i] > 0)
@@ -187,7 +194,7 @@ public class BotStarter implements Bot
 				//add our plan to the total armies of the regions.
 				state.getVisibleMap().getRegion(ids[i]).setArmies(state.getVisibleMap().getRegion(ids[i]).getArmies() + Max_deployments[i]);
 			}
-			System.err.println("Deployment of  " + Max_deployments[i] + " armies to region " + ids[i] + ".");
+			//System.err.println("Deployment of  " + Max_deployments[i] + " armies to region " + ids[i] + ".");
 		}
 		
 		//go get 'em boy!
@@ -206,6 +213,7 @@ public class BotStarter implements Bot
 		Map mapCopy = state.getVisibleMap().getMapCopy();
 		String myName = state.getMyPlayerName();
 		int armies = 0;
+		String opponentName = state.getOpponentPlayerName();
 		
 		//TODO: REMOVE DEBUG STATEMENT
 		System.err.println("\nATTACKS ROUND " + state.getRoundNumber() + " ---------------------------------");
@@ -240,12 +248,17 @@ public class BotStarter implements Bot
 					attackable.add(fromRegion);
 					
 					//set up int []'s for each of id's and planned attacks
+					int fromId = fromRegion.getId();
 					int[] ids = new int[attackable.size()];
-					int[] attacks = new int[attackable.size()];
-					
-					//set up ids
+					String[] names = new String[ids.length];
+					int[] attacks = new int[ids.length];
+					int[] defenders = new int[ids.length];
+					int totalOnAttacker = fromRegion.getArmies();
+					//set up ids, playernames, and defenders
 					for(int i = 0; i < ids.length; i++){
 						ids[i] = attackable.get(i).getId();
+						names[i] = attackable.get(i).getPlayerName();
+						defenders[i] = attackable.get(i).getArmies();
 					}
 					
 					//set up initial configuration of attacks
@@ -274,9 +287,14 @@ public class BotStarter implements Bot
 						randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
-						currMap = mapCopy.getMapCopy();
-						currMap.simulateAttacks(fromRegion.getId(), currAttacks, ids, myName);
-						currUtil = currMap.Utility(myName, state.getOpponentPlayerName());
+						//currMap = mapCopy.getMapCopy();
+						//currMap.simulateAttacks(fromRegion.getId(), currAttacks, ids, myName);
+						//currUtil = currMap.Utility(myName, state.getOpponentPlayerName());
+						mapCopy.simulateAttacks(fromId, currAttacks, ids, myName);
+						currUtil = mapCopy.Utility(myName, opponentName);
+						mapCopy.undoSimulation(fromId, currAttacks, defenders, ids, names, totalOnAttacker);
+						
+						
 						
 						//If the permutation has better utility than before, accept it
 						if(currUtil > lastUtil)
@@ -320,7 +338,7 @@ public class BotStarter implements Bot
 							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
 						}
 					}
-					mapCopy.simulateAttacks(fromRegion.getId(), attacks, ids, myName);
+					//mapCopy.simulateAttacks(fromRegion.getId(), attacks, ids, myName);
 					
 //					//Old/Tested attack code
 //					
@@ -397,10 +415,10 @@ public class BotStarter implements Bot
 	 */
 	private double expectedUtilityAfter(BotState state, Map vis, String myName){
 		ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<AttackTransferMove>();
-		Map visible = vis.getMapCopy();
-		double CurrentUtility = visible.Utility(myName, state.getOpponentPlayerName());
-		ArrayList<Double> probList = new ArrayList<Double>();
-		for(Region fromRegion : visible.getRegions())
+		Map mapCopy = vis.getMapCopy();
+		String opponentName = state.getOpponentPlayerName();
+		double CurrentUtility = mapCopy.Utility(myName, state.getOpponentPlayerName());
+		for(Region fromRegion : mapCopy.getRegions())
 		{
 			if(fromRegion.ownedByPlayer(myName)) //Do an attack or transfer
 			{
@@ -415,68 +433,147 @@ public class BotStarter implements Bot
 							attackable.add(current);
 						}
 					}
+					attackable.add(fromRegion);
 					
-					//I need two doubles for each Attackable Region: probability and Utility
-					//index of each corresponds to index of an attackable
-					double[] probabilities = new double[attackable.size()];
-					double[] utilities = new double[attackable.size()];
+					//set up int []'s for each of id's and planned attacks
+					int fromId = fromRegion.getId();
+					int[] ids = new int[attackable.size()];
+					String[] names = new String[ids.length];
+					int[] attacks = new int[ids.length];
+					int[] defenders = new int[ids.length];
+					int totalOnAttacker = fromRegion.getArmies();
+					//set up ids, playernames, and defenders
+					for(int i = 0; i < ids.length; i++){
+						ids[i] = attackable.get(i).getId();
+						names[i] = attackable.get(i).getPlayerName();
+						defenders[i] = attackable.get(i).getArmies();
+					}
 					
-					//find each of the probabilities and utilities for taking an attackable region
-					for(int i =0;i< attackable.size(); i++){
-						Region current = attackable.get(i);
-						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
-						//compute the Utility of the map if I do take it
-						//does not take into account armies if that matters in future
-						Map visible1 = state.getVisibleMap();
-						//make the region in question mine **this should work...I think
-						for(int k = 0; k < visible1.regions.size(); k++){
-							if(visible1.regions.get(k).getId() == current.getId()){
-								String regionOwner = visible1.regions.get(k).getPlayerName();
-								visible1.regions.get(k).setPlayerName(myName);
-								utilities[i] = visible1.Utility(myName, state.getOpponentPlayerName());
-								visible1.regions.get(k).setPlayerName(regionOwner); //restore order. Don't want to consider it as ours next time!
-								break; //we got it.
-							}
+					//set up initial configuration of attacks
+					
+					int[] currAttacks;
+					double lastUtil = -Double.MAX_VALUE;
+					double currUtil = -Double.MAX_VALUE;
+					double probability = 1.0/ids.length;
+					int attacked = 0;
+					int k = 0;
+					
+					while(attacked != (fromRegion.getArmies() - 1)){
+						if(Math.random() < probability){
+							attacks[k]++;
+							attacked++;
 						}
+						k = (k+1) % ids.length;
+					}
+					
+					//Use a hill-climbing search to find the 'best' attack combination
+					//TODO: Find a better way to limit iterations
+					for(int i = 0; i < 1000; i++)
+					{	
+						//Create a random permutation of the attack
+						currAttacks = Arrays.copyOf(attacks, attacks.length);
+						randomPermutation(currAttacks);
 						
-					}
-					boolean[] willingToTry = new boolean[attackable.size()];
-					//give answer for each index
-					for(int i = 0; i<probabilities.length; i++){
-						if(probabilities[i] > .675) willingToTry[i] = true; //TODO prob
-						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
-					}
-					//find the max utility of the ones we are willing to try.
-					int indexMax = -1;
-					double maxUtil = -Double.MAX_VALUE;
-					for(int i = 0; i < utilities.length; i++){
-						if(willingToTry[i] && utilities[i] > maxUtil){
-							indexMax = i;
-							maxUtil = utilities[i];
+						//Simulate the permutation of the attack and get its utility
+						//currMap = mapCopy.getMapCopy();
+						//currMap.simulateAttacks(fromRegion.getId(), currAttacks, ids, myName);
+						//currUtil = currMap.Utility(myName, state.getOpponentPlayerName());
+						mapCopy.simulateAttacks(fromId, currAttacks, ids, myName);
+						currUtil = mapCopy.Utility(myName, opponentName);
+						mapCopy.undoSimulation(fromId, currAttacks, defenders, ids, names, totalOnAttacker);
+						
+						
+						//If the permutation has better utility than before, accept it
+						if(currUtil > lastUtil)
+						{
+							lastUtil = currUtil;
+							attacks = currAttacks;
+						}else{//TODO accept with probability proportional to how long its been in loop
+							
 						}
 					}
-					//If we were willing to do any, do that best one with all we got.
-					if(indexMax != -1){
-						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
-						probList.add(probabilities[indexMax]);
+					//Take the attack actions decided
+					for(int i = 0; i < attacks.length; i++)
+					{
+						if(fromRegion.getId() != ids[i] && attacks[i] > 0)
+						{
+							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
+						}
 					}
 					
+					
+//					TODO: REMOVE OLD CODE
+//					//get list of regions I can attack
+//					ArrayList<Region> attackable = new ArrayList<Region>();
+//					for(int i = 0; i < fromRegion.getNeighbors().size(); i++){
+//						Region current = fromRegion.getNeighbors().get(i);
+//						if(!current.getPlayerName().equals(myName)){
+//							attackable.add(current);
+//						}
+//					}
+//					
+//					//I need two doubles for each Attackable Region: probability and Utility
+//					//index of each corresponds to index of an attackable
+//					double[] probabilities = new double[attackable.size()];
+//					double[] utilities = new double[attackable.size()];
+//					
+//					//find each of the probabilities and utilities for taking an attackable region
+//					for(int i =0;i< attackable.size(); i++){
+//						Region current = attackable.get(i);
+//						probabilities[i] = probabilityToTake(fromRegion.getArmies()-1,current.getArmies());
+//						//compute the Utility of the map if I do take it
+//						//does not take into account armies if that matters in future
+//						Map visible1 = state.getVisibleMap();
+//						//make the region in question mine **this should work...I think
+//						for(int k = 0; k < visible1.regions.size(); k++){
+//							if(visible1.regions.get(k).getId() == current.getId()){
+//								String regionOwner = visible1.regions.get(k).getPlayerName();
+//								visible1.regions.get(k).setPlayerName(myName);
+//								utilities[i] = visible1.Utility(myName, state.getOpponentPlayerName());
+//								visible1.regions.get(k).setPlayerName(regionOwner); //restore order. Don't want to consider it as ours next time!
+//								break; //we got it.
+//							}
+//						}
+//						
+//					}
+//					boolean[] willingToTry = new boolean[attackable.size()];
+//					//give answer for each index
+//					for(int i = 0; i<probabilities.length; i++){
+//						if(probabilities[i] > .675) willingToTry[i] = true; //TODO prob
+//						else willingToTry[i] = false; //I think array constructor may do this but I'll be safe
+//					}
+//					//find the max utility of the ones we are willing to try.
+//					int indexMax = -1;
+//					double maxUtil = -Double.MAX_VALUE;
+//					for(int i = 0; i < utilities.length; i++){
+//						if(willingToTry[i] && utilities[i] > maxUtil){
+//							indexMax = i;
+//							maxUtil = utilities[i];
+//						}
+//					}
+//					//If we were willing to do any, do that best one with all we got.
+//					if(indexMax != -1){
+//						attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, attackable.get(indexMax), fromRegion.getArmies()-1));
+//						probList.add(probabilities[indexMax]);
+//					}
+//					
 				}
 			}
 		}
-		String opponentName = state.getOpponentPlayerName();
+		
+		
 		//go through and make attacking regions our own, calculate the difference in utility
 		//sum the differences in utility * prob of each
 		//in this way, the bot will favor certainty
 		double sum = 0;
-		
+		mapCopy = vis.getMapCopy();
 		for(int i = 0;i<attackTransferMoves.size(); i++){
 			AttackTransferMove move = attackTransferMoves.get(i);
 			String playerName = move.getToRegion().getPlayerName();
-			visible.getRegion(move.getToRegion().getId()).setPlayerName(myName);
-			sum += (visible.Utility(myName, opponentName)-CurrentUtility) * probList.get(i); //(new-old)*probNew; expected gain
-			//return to previous state TODO: armies changes???
-			visible.getRegion(move.getToRegion().getId()).setPlayerName(playerName);
+			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(myName);
+			sum += (mapCopy.Utility(myName, opponentName)-CurrentUtility) * probabilityToTake(move.getArmies(), move.getToRegion().getArmies()); //(new-old)*probNew; expected gain
+			//return to previous state TODO: armies changes??? 
+			mapCopy.getRegion(move.getToRegion().getId()).setPlayerName(playerName);
 		}
 		
 		
@@ -552,7 +649,7 @@ public class BotStarter implements Bot
         	return 0;
         }
         if(diff != 0)
-        	return -1 + (500.0/diff); //TODO change?
+        	return -1 + (500.0/diff); 
         else return 1; //it happened SUPER quick
 	}
 	
@@ -577,7 +674,7 @@ public class BotStarter implements Bot
 		do
 		{
 			from = (int)(rand.nextDouble() * (arr.length));
-		} while(arr[from] <= 0);
+		} while(arr[from] < 1);
 		
 		//Get an index to move to, making sure that it is not the same region as before
 		do
@@ -589,6 +686,17 @@ public class BotStarter implements Bot
 		arr[to]++;
 	}
 	
+	
+	public static void applyDeployments(Map map, int[] deployments, int[] ids){
+		for(int i = 0; i < ids.length; i++){
+			map.getRegion(ids[i]).setArmies(map.getRegion(ids[i]).getArmies() + deployments[i]);
+		}
+	}
+	public static void deapplyDeployments(Map map, int[] deployments, int[] ids){
+		for(int i = 0; i < ids.length; i++){
+			map.getRegion(ids[i]).setArmies(map.getRegion(ids[i]).getArmies() - deployments[i]);
+		}
+	}
 	public static void main(String[] args)
 	{
 		BotParser parser = new BotParser(new BotStarter());
