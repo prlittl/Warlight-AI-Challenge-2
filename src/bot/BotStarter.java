@@ -36,7 +36,7 @@ import move.PlaceArmiesMove;
 
 public class BotStarter implements Bot 
 {
-	int[] startingAttacks; 
+	
 	@Override
 	/**
 	 * A method that returns which region the bot would like to start on, the pickable regions are stored in the BotState.
@@ -151,7 +151,7 @@ public class BotStarter implements Bot
 				}
 			}
 			count++;
-			T = computeT(startTime);
+			T = computeT(startTime,250);
 		}
 		//TODO
 		System.err.println(count + " Simulated Annealing Loops done******");
@@ -267,9 +267,17 @@ public class BotStarter implements Bot
 					int[] currAttacks;
 					double lastUtil = -Double.MAX_VALUE;
 					double currUtil = -Double.MAX_VALUE;
+					double probability = 1.0/ids.length;
+					int attacked = 0;
+					int k = 0;
 					
-					
-					attacks = startingAttacks;
+					while(attacked != (fromRegion.getArmies() - 1)){
+						if(Math.random() < probability){
+							attacks[k]++;
+							attacked++;
+						}
+						k = (k+1) % ids.length;
+					}
 					long startTime = System.nanoTime();
 					double T = 500;
 					double deltaE = 0;
@@ -282,7 +290,8 @@ public class BotStarter implements Bot
 						if(T == 0) break;
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
-						randomPermutation(currAttacks);
+						for(int i = 0; i <= fromRegion.getArmies()/5; i++)
+							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
 						//currMap = mapCopy.getMapCopy();
@@ -311,41 +320,19 @@ public class BotStarter implements Bot
 							
 							}
 						}
-						T = computeT(startTime);
+						T = computeT(startTime,250);
 					}
 					attacks = maxAttacks;
-					//TODO: Remove debug statements
-					if(attacks.length > 0)
-					{
-						System.err.println("Planned attacks from region " + fromRegion.getId() + ":");
-						System.err.printf("IDs: %03d", ids[0]);
-						for(int i = 1; i < ids.length; i++)
-						{
-							System.err.printf(", %03d", ids[i]);
-						}
-						System.err.println();
-						
-						System.err.printf("Atk: %03d", attacks[0]);
-						for(int i = 1; i < attacks.length; i++)
-						{
-							System.err.printf(", %03d", attacks[i]);
-						}
-						System.err.println();
-						
-						System.err.printf("Def: %03d", state.getVisibleMap().getRegion(ids[0]).getArmies());
-						for(int i = 1; i < ids.length; i++)
-						{
-							System.err.printf(", %03d", state.getVisibleMap().getRegion(ids[i]).getArmies());
-						}
-						System.err.println();
-					}
-					//TODO: remove impossible Attacks...
+				
+					
+					
 					//Take the attack actions decided
 					for(int i = 0; i < attacks.length; i++)
 					{
 						if(fromRegion.getId() != ids[i] && attacks[i] > 0)
 						{
-							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
+							if(probabilityToTake(attacks[i],state.getVisibleMap().getRegion(ids[i]).getArmies()) > .6125)
+								attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
 						}
 					}
 					//mapCopy.simulateAttacks(fromRegion.getId(), attacks, ids, myName);
@@ -482,7 +469,9 @@ public class BotStarter implements Bot
 					{	
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
-						randomPermutation(currAttacks);
+						
+						for(int l = 0; l <= fromRegion.getArmies()/5; l++)
+							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
 						//currMap = mapCopy.getMapCopy();
@@ -510,13 +499,14 @@ public class BotStarter implements Bot
 						}
 					}
 					attacks = maxAttacks;
-					startingAttacks = attacks;
+					
 					//Take the attack actions decided
 					for(int i = 0; i < attacks.length; i++)
 					{
 						if(fromRegion.getId() != ids[i] && attacks[i] > 0)
 						{
-							attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
+							if(probabilityToTake(attacks[i],state.getVisibleMap().getRegion(ids[i]).getArmies()) > .6125)
+								attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, state.getVisibleMap().getRegion(ids[i]), attacks[i]));						
 						}
 					}
 				}
@@ -604,14 +594,14 @@ public class BotStarter implements Bot
 	 * @param startTime time turn started
 	 * @return the value of T for current time
 	 */
-	public static double computeT(long startTime){
+	public static double computeT(long startTime, int time){
 		long current = System.nanoTime();
 		long diff = (long) ((current - startTime ) / 1000000.0);
-        if(diff > 350){
+        if(diff > time){
         	return 0;
         }
         if(diff != 0)
-        	return -1 + (350.0/diff); 
+        	return -1 + (time/diff); 
         else return 1; //it happened SUPER quick
 	}
 	
@@ -650,6 +640,9 @@ public class BotStarter implements Bot
 		arr[to]++;
 	}
 	
+	public static void mutateAttacks(int [] attacks){
+		
+	}
 	
 	public static void applyDeployments(Map map, int[] deployments, int[] ids){
 		for(int i = 0; i < ids.length; i++){
