@@ -151,7 +151,7 @@ public class BotStarter implements Bot
 				}
 			}
 			count++;
-			T = computeT(startTime,250);
+			T = computeT(startTime,200);
 		}
 		//TODO: remove debug
 		System.err.println(count + " Simulated Annealing Loops done******");
@@ -290,7 +290,7 @@ public class BotStarter implements Bot
 						if(T == 0) break;
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
-						for(int i = 0; i <= fromRegion.getArmies()/3; i++)//TODO: modify?
+						for(int i = 0; i <= fromRegion.getArmies()/5; i++)//TODO: modify?
 							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
@@ -318,7 +318,7 @@ public class BotStarter implements Bot
 							
 							}
 						}
-						T = computeT(startTime,250);
+						T = computeT(startTime,300);
 					}
 					attacks = maxAttacks;
 					
@@ -490,7 +490,7 @@ public class BotStarter implements Bot
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
 						
-						for(int l = 0; l <= fromRegion.getArmies()/3; l++) //TODO: modify?
+						for(int l = 0; l <= fromRegion.getArmies()/2; l++) //TODO: modify?
 							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
