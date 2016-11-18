@@ -369,7 +369,26 @@ public class BotStarter implements Bot
 						}
 					}
 					
-					//Distribute remaining armies if an attack was made
+					//If armies are leftover, make more attacks if we can attack with >0.6125 chance of winning
+					if(attacks[attacks.length - 1] > 0)
+					{
+						for(int i = 0; i < attacks.length - 1; i++)
+						{
+							//If we have enough leftover armies to make this attack, take it
+							if(attacks[i] == 0 && probabilityToTake(attacks[attacks.length - 1], state.getVisibleMap().getRegion(ids[i]).getArmies()) > 0.6125)
+							{
+								//Give just enough armies to pass 0.6125 threshold
+								while(probabilityToTake(attacks[i], state.getVisibleMap().getRegion(ids[i]).getArmies()) <= 0.6125)
+								{
+									attacks[i]++;
+									attacks[attacks.length - 1]--;
+								}
+								attackMade = true;
+							}
+						}
+					}
+					
+					//Distribute remaining armies if an attack was made and armies are leftover - go all in
 					if(attackMade && attacks[attacks.length - 1] > 0)
 					{
 						int index = 0;
