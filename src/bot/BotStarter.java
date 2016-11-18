@@ -323,8 +323,66 @@ public class BotStarter implements Bot
 						T = computeT(startTime,250);
 					}
 					attacks = maxAttacks;
-				
 					
+					//Sanity checks on attacks
+					for(int i = 0; i < attacks.length - 1; i++)
+					{
+						//If there is a low chance to take any region, don't do the attack
+						if(probabilityToTake(attacks[i],state.getVisibleMap().getRegion(ids[i]).getArmies()) < 0.35)
+						{
+							attacks[attacks.length - 1] += attacks[i];
+							attacks[i] = 0;
+						}
+					}
+					
+					//Try to make other attacks which are close to being successful be successful
+					boolean attackMade = false;
+					for(int i = 0; i < attacks.length - 1; i++)
+					{
+						if(attacks[i] != 0)
+						{
+							//If we can take a region with greater than 0.6125 chance, make the attack
+							if(probabilityToTake(attacks[i],state.getVisibleMap().getRegion(ids[i]).getArmies()) > 0.6125)
+							{
+								attackMade = true;
+							}
+							else
+							{
+								//Otherwise, if we have enough remaining armies to make the attack, take it
+								if(probabilityToTake(attacks[i] + attacks[attacks.length - 1], state.getVisibleMap().getRegion(ids[i]).getArmies()) > 0.6125)
+								{
+									//Give just enough armies to pass 0.6125 threshold
+									while(probabilityToTake(attacks[i], state.getVisibleMap().getRegion(ids[i]).getArmies()) <= 0.6125)
+									{
+										attacks[i]++;
+										attacks[attacks.length - 1]--;
+									}
+									attackMade = true;
+								}
+								else
+								{
+									//If we don't have a good chance of taking even with extra armies, don't attack
+									attacks[attacks.length - 1] += attacks[i];
+									attacks[i] = 0;
+								}
+							}
+						}
+					}
+					
+					//Distribute remaining armies if an attack was made
+					if(attackMade && attacks[attacks.length - 1] > 0)
+					{
+						int index = 0;
+						while(attacks[attacks.length - 1] > 0)
+						{
+							if(attacks[index] > 0)
+							{
+								attacks[index]++;
+								attacks[attacks.length - 1]--;
+							}
+							index = (index + 1) % (attacks.length - 1);
+						}
+					}
 					
 					//Take the attack actions decided
 					for(int i = 0; i < attacks.length; i++)
