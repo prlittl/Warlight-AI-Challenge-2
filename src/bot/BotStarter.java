@@ -458,14 +458,20 @@ public class BotStarter implements Bot
 		//System.err.println("-------------END TURN--------------");
 		
 		//super bm
+		int visRegionCount = 0;
+		int totalRegionCount = state.getFullMap().getRegions().size();
 		int theirRegions = 0;
 		int bmCount = 0;
 		
-		for(int i=0;i<state.getFullMap().getRegions().size();i++){
-			if(state.getFullMap().getRegions().get(i).getPlayerName().equals(opponentName))theirRegions++;
+		for(int i=0;i<state.getVisibleMap().getRegions().size();i++){
+			if(state.getVisibleMap().getRegions().get(i).getPlayerName().equals(opponentName))theirRegions++;
+			visRegionCount++;
 		}
 		
-		if(theirRegions == 1 && bmCount <=10)return null;
+		if(totalRegionCount == visRegionCount && theirRegions == 1 && bmCount <=10){
+			System.err.println("BM BM BM BM BM BM BM BM BM BM BM BM BM\n");
+			return null;
+		}
 		
 		return attackTransferMoves;
 	}
