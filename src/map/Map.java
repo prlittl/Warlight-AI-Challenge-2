@@ -204,24 +204,12 @@ public class Map {
 //		}
 //		
 		//TODO: Real Utility Function
-		double util = 0;
-		int ownedRegions;
-		for(int i=0;i<superRegions.size();i++){
-			//for every sub region of the super region see if it is owned by us or the opponent
-			ownedRegions = 0;
-			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
-				if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(myName)){
-					ownedRegions++;
-					util++;
-				}
-			}
-			if (superRegions.get(i).getSubRegions().size() == ownedRegions){
-				util += superRegions.get(i).getArmiesReward();
-			}
+		int ownedRegions = 0;
+		for(Region r: this.getRegions()){
+			if(r.getPlayerName().equals(myName)) ownedRegions++;
 		}
 		
-		
-		return util;
+		return ownedRegions;
 	}
 	
 	/**
