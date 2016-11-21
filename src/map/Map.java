@@ -203,13 +203,30 @@ public class Map {
 //			enemyAttackers = 0;
 //		}
 //		
-		//TODO: Real Utility Function
-		int ownedRegions = 0;
-		for(Region r: this.getRegions()){
-			if(r.getPlayerName().equals(myName)) ownedRegions++;
+		//TODO: is this a good idea?
+		//Here are my thoughts:
+		//going through each superregion and its subregions is O(n) where n is the number of total regions
+		//its good to own a region, so add one
+		//its great to own an entire super region, so add bonus (some better than others)
+		//its better to own more of a super region
+		//	-also ought to help plateau
+		double util = 0;
+		double ratio;
+		int ownedRegions;
+		for(SuperRegion sr: superRegions){
+			
+			ownedRegions = 0; //counter for current sr
+			
+			for(Region r: sr.getSubRegions()){
+				if(r.ownedByPlayer(myName))ownedRegions++;
+			}
+			util += ownedRegions; //how many we own in sr 
+			ratio = ((double)ownedRegions)/sr.getSubRegions().size();
+			util += (ratio * ratio) * sr.getArmiesReward(); //less for lower ratios
+			
 		}
 		
-		return ownedRegions;
+		return util;
 	}
 	
 	/**
