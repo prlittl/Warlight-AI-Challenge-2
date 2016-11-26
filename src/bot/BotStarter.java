@@ -76,7 +76,7 @@ public class BotStarter implements Bot
 					visited[currRegion.getId()] = true;
 					for(int i=0;i<currRegion.getNeighbors().size();i++){
 						for(int j=0;j<state.getPickableStartingRegions().size();j++){
-							if(currRegion.getNeighbors().get(i).isNeighbor(state.getPickableStartingRegions().get(j)))return state.getPickableStartingRegions().get(j);
+							if(currRegion.getNeighbors().get(i).equals(state.getPickableStartingRegions().get(j)))return state.getPickableStartingRegions().get(j);
 						}
 						if(!visited[currRegion.getNeighbors().get(i).getId()])q.add(currRegion.getNeighbors().get(i));
 					}
