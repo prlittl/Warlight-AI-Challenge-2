@@ -39,7 +39,7 @@ public class BotStarter implements Bot
 {
 	boolean firstRegion = true; // boolean to see if the bot is picking its first starting region
 	boolean visited[]; //list of visited nodes for bfs
-	Region first; //starting region for bfs
+	Region cRegion; //current region for bfs
 	
 	@Override
 	/**
@@ -50,7 +50,7 @@ public class BotStarter implements Bot
 	public Region getStartingRegion(BotState state, Long timeOut)
 	{
 		int temp = 100, choice = 0, n;
-		Region currRegion; //current region for bfs
+		Region currRegion; //current region for bfs search
 		
 		if(firstRegion){
 			for(int i=0; i<state.getPickableStartingRegions().size();i++){
@@ -61,14 +61,14 @@ public class BotStarter implements Bot
 			int regionId = state.getPickableStartingRegions().get(choice).getId();
 			Region startingRegion = state.getFullMap().getRegion(regionId);
 			firstRegion = false;
-			first = startingRegion;
+			cRegion = startingRegion;
 			visited = new boolean[state.getFullMap().getRegions().size()]; //assuming region ids correspond to size of map
 			return startingRegion;
 		}
 		else{
 			// BFS
 			Queue<Region> q = new LinkedList<Region>();
-			q.add(first);
+			q.add(cRegion);
 			while(!q.isEmpty()){
 				currRegion = q.remove();
 				
@@ -76,7 +76,10 @@ public class BotStarter implements Bot
 					visited[currRegion.getId()] = true;
 					for(int i=0;i<currRegion.getNeighbors().size();i++){
 						for(int j=0;j<state.getPickableStartingRegions().size();j++){
-							if(currRegion.getNeighbors().get(i).equals(state.getPickableStartingRegions().get(j)))return state.getPickableStartingRegions().get(j);
+							if(currRegion.getNeighbors().get(i).equals(state.getPickableStartingRegions().get(j))){
+								cRegion = state.getPickableStartingRegions().get(j);
+								return state.getPickableStartingRegions().get(j);
+							}
 						}
 						if(!visited[currRegion.getNeighbors().get(i).getId()])q.add(currRegion.getNeighbors().get(i));
 					}
