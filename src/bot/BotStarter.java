@@ -27,6 +27,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
 
 import map.Map;
@@ -36,6 +37,9 @@ import move.PlaceArmiesMove;
 
 public class BotStarter implements Bot 
 {
+	boolean firstRegion = true; // boolean to see if the bot is picking its first starting region
+	boolean visited[]; //list of visited nodes for bfs
+	Region cRegion; //current root region for bfs
 	
 	@Override
 	/**
@@ -46,15 +50,44 @@ public class BotStarter implements Bot
 	public Region getStartingRegion(BotState state, Long timeOut)
 	{
 		int temp = 100, choice = 0, n;
-		for(int i=0; i<state.getPickableStartingRegions().size();i++){
-			n = state.getPickableStartingRegions().get(i).getNeighbors().size();
-			if(n < temp)choice = i;
-			temp = n;
-		}
-		int regionId = state.getPickableStartingRegions().get(choice).getId();
-		Region startingRegion = state.getFullMap().getRegion(regionId);
+		Region currRegion; //current region for bfs
 		
-		return startingRegion;
+		if(firstRegion){
+			for(int i=0; i<state.getPickableStartingRegions().size();i++){
+				n = state.getPickableStartingRegions().get(i).getNeighbors().size();
+				if(n < temp)choice = i;
+				temp = n;
+			}	
+			int regionId = state.getPickableStartingRegions().get(choice).getId();
+			Region startingRegion = state.getFullMap().getRegion(regionId);
+			firstRegion = false;
+			cRegion = startingRegion;
+			visited = new boolean[state.getFullMap().getRegions().size()]; //assuming region ids correspond to size of map
+			return startingRegion;
+		}
+		else{
+			// BFS
+			Queue<Region> q = new LinkedList<Region>();
+			q.add(cRegion);
+			while(!q.isEmpty()){
+				currRegion = q.remove();
+				
+				if(!visited[currRegion.getId()]){
+					visited[currRegion.getId()] = true;
+					for(int i=0;i<currRegion.getNeighbors().size();i++){
+						for(int j=0;j<state.getPickableStartingRegions().size();j++){
+							if(currRegion.getNeighbors().get(i).equals(state.getPickableStartingRegions().get(j))){
+								cRegion = state.getPickableStartingRegions().get(j);
+								return state.getPickableStartingRegions().get(j);
+							}
+						}
+						if(!visited[currRegion.getNeighbors().get(i).getId()])q.add(currRegion.getNeighbors().get(i));
+					}
+				}	
+			}
+			System.err.println("---------BFS Not Working--------");
+			return null;
+		}
 	}
 
 	@Override
