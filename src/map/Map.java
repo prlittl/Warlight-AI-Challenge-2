@@ -149,66 +149,6 @@ public class Map {
 	 * @return the utility value of the map
 	 */
 	public double Utility(String myName, String opponent){
-//		double util = 0; //calculated utility value
-//		int owned = 0; //number of regions owned in a super region
-//		int enemyOwned = 0; //number of regions the enemy owns in a super region
-//		double enemyAttackers = 0;
-//		
-//		//for every region add one point of utility if we own it, and take one away if the enemy does
-//		for(int i=0;i<regions.size();i++){
-//			for(int j=0;j<regions.get(i).getNeighbors().size();j++){
-//				if(regions.get(i).isBorder()){
-//					if(regions.get(i).getNeighbors().get(j).getPlayerName().equals(opponent))enemyAttackers += regions.get(i).getNeighbors().get(j).getArmies();
-//				}
-//			}
-//			//if a border region is in danger of being taken (probability greater than 0.5) do not include it in utility
-//			if(regions.get(i).getPlayerName().equals(myName) && regions.get(i).isBorder() && BotStarter.probabilityToTake(enemyAttackers, regions.get(i).getArmies())> 0.6)
-//				util -= BotStarter.probabilityToTake(enemyAttackers, regions.get(i).getArmies()); //TODO: Tweak decrease in utility here
-//			else if(regions.get(i).getPlayerName().equals(myName))util++;
-//			else if(regions.get(i).getPlayerName().equals(opponent))util--;
-//			enemyAttackers = 0;
-//		}
-//		
-//		//for every super region add to utility (total/owned regions) * the super region army bonus
-//		for(int i=0;i<superRegions.size();i++){
-//			//for every sub region of the super region see if it is owned by us or the opponent
-//			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
-//				if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(myName))owned++;
-//				else if(superRegions.get(i).getSubRegions().get(j).getPlayerName().equals(opponent))enemyOwned++;
-//			}
-//			
-//			util += ((double)owned/(superRegions.get(i).getSubRegions().size()) * superRegions.get(i).getArmiesReward());
-//			
-//			//if the enemy owns at least one region in a super region, take away one point for every one we own in that super region
-//			if(owned != superRegions.get(i).getSubRegions().size() && enemyOwned > 0)util -= owned;
-//			
-//			//if we own all regions in a super region, add super region bonus amount
-//			if(owned == superRegions.get(i).getSubRegions().size())util += superRegions.get(i).getArmiesReward();
-//			
-//			//find number of enemy attackers around a region
-//			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
-//				for(int k=0;k<superRegions.get(i).getSubRegions().get(j).getNeighbors().size();k++){
-//					if(superRegions.get(i).getSubRegions().get(j).isBorder()){
-//						if(superRegions.get(i).getSubRegions().get(j).getNeighbors().get(k).getPlayerName().equals(opponent))enemyAttackers += superRegions.get(i).getSubRegions().get(j).getNeighbors().get(k).getArmies();
-//					}
-//				}
-//			}
-//			
-//			//if the probability that the enemy takes a region in a super region we own is greater than
-//			//0.5, then subtract the super region bonus from the utility
-//			for(int j=0;j<superRegions.get(i).getSubRegions().size();j++){
-//				if(owned == superRegions.get(i).getSubRegions().size()){
-//					util -= superRegions.get(i).getArmiesReward() * BotStarter.probabilityToTake(enemyAttackers, superRegions.get(i).getSubRegions().get(j).getArmies());
-//					break;
-//				}
-//			}
-//			
-//			owned = 0;
-//			enemyOwned = 0;
-//			enemyAttackers = 0;
-//		}
-//		
-		//TODO: is this a good idea?
 		//Here are my thoughts:
 		//going through each superregion and its subregions is O(n) where n is the number of total regions
 		//its good to own a region, so add one
