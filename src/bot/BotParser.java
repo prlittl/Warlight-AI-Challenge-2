@@ -1,10 +1,15 @@
 /**
  * Warlight AI Game Bot
- *
- * Last update: January 29, 2015
- *
- * @author Jim van Eeden
- * @version 1.1
+ * 
+ * This is an agent made as a submission to the Warlight AI Challenge II by
+ * Joshua Dunster, Phillip Little, and Jacob Murphy as part of an undergraduate
+ * Introduction to AI course at Clemson University. It was developed using the
+ * provided Java program shell created by Jim van Eeden to communicate with the
+ * competition program, with our team adding implementations for the function shells
+ * provided by that version. The MIT license is included as his shell was released
+ * under that license.
+ * 
+ * @author Joshua Dunster, Phillip Little, Jacob Murphy * 
  * @License MIT License (http://opensource.org/Licenses/MIT)
  */
 

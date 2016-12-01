@@ -1,10 +1,15 @@
 /**
  * Warlight AI Game Bot
- *
- * Last update: January 29, 2015
- *
- * @author Jim van Eeden
- * @version 1.1
+ * 
+ * This is an agent made as a submission to the Warlight AI Challenge II by
+ * Joshua Dunster, Phillip Little, and Jacob Murphy as part of an undergraduate
+ * Introduction to AI course at Clemson University. It was developed using the
+ * provided Java program shell created by Jim van Eeden to communicate with the
+ * competition program, with our team adding implementations for the function shells
+ * provided by that version. The MIT license is included as his shell was released
+ * under that license.
+ * 
+ * @author Joshua Dunster, Phillip Little, Jacob Murphy * 
  * @License MIT License (http://opensource.org/Licenses/MIT)
  */
 
@@ -186,8 +191,7 @@ public class BotStarter implements Bot
 			count++;
 			T = computeT(startTime,200);
 		}
-		//TODO: remove debug
-		System.err.println(count + " Simulated Annealing Loops done******");
+
 		int armiesToDisperse = 0;
 		//for those deployments which do not add any Utility, put those on another index > 0, if such exists
 		for(int i = 0; i < Max_deployments.length; i++){
@@ -248,9 +252,6 @@ public class BotStarter implements Bot
 		String myName = state.getMyPlayerName();
 		int armies = 0;
 		String opponentName = state.getOpponentPlayerName();
-		
-		//TODO: REMOVE DEBUG STATEMENT
-		System.err.println("\nATTACKS ROUND " + state.getRoundNumber() + " ---------------------------------");
 		
 		for(Region fromRegion : state.getVisibleMap().getRegions())
 		{
@@ -323,7 +324,7 @@ public class BotStarter implements Bot
 						if(T == 0) break;
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
-						for(int i = 0; i <= fromRegion.getArmies()/5; i++)//TODO: modify?
+						for(int i = 0; i <= fromRegion.getArmies()/5; i++)
 							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
@@ -464,12 +465,6 @@ public class BotStarter implements Bot
 			visRegionCount++;
 		}
 		
-		//TODO: make bot sit on deployments until final move, in which it attacks with all
-		if(totalRegionCount == visRegionCount && theirRegions == 1 && bmCount <=10 && state.getRoundNumber() < 55){
-			System.err.println("BM BM BM BM BM BM BM BM BM BM BM BM BM\n");
-			return new ArrayList<AttackTransferMove>();
-		}
-		
 		return attackTransferMoves;
 	}
 	
@@ -542,7 +537,7 @@ public class BotStarter implements Bot
 						//Create a random permutation of the attack
 						currAttacks = Arrays.copyOf(attacks, attacks.length);
 						
-						for(int l = 0; l <= fromRegion.getArmies()/2; l++) //TODO: modify?
+						for(int l = 0; l <= fromRegion.getArmies()/2; l++)
 							randomPermutation(currAttacks);
 						
 						//Simulate the permutation of the attack and get its utility
