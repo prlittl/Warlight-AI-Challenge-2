@@ -6,6 +6,9 @@ This bot divides the game into three main action components: picking regions to 
 The utility function itself uses a local search algorithm, simulated annealing, in an attempt to find that global maximum utility based on possible moves, allowing for a result somewhat close to the maximum utility while using a limited amount of time. While other algorithms, such as an expectiminimax search, were attempted, they were difficult to use to find an acceptable maximum utility move in a limited amount of time. Additional heuritics are also used to prevent moves which would cause a lower utility state than the current state, such as spreading armies too thin to defend currently held regions, or attacking with too few armies to take a region.
 
 With that utility function, the overall behavior of the bot is as follows:
+  
   Initial Region Choices: Regions with the least adjacent regions are chosen first, as they are the most defensible. Then, regions closest to the initial region are chosen.
+  
   Deployment to Regions: Armies are deployed mostly to border regions or those adjacent to border regions, calculating utility of deployments based on probability of an attack on a given region succeeding.
+  
   Attack/Transfer to Regions: Armies are transferred from inner regions to border regions to keep a well-defended perimeter. Attacks are decided based on the utility of the resulting state if the attack succeeds, weighted by the probability of a success for an attack.
